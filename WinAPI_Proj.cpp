@@ -5,13 +5,6 @@
 #include "WinAPI_Proj.h"
 
 #define MAX_LOADSTRING 100
-#define PI 3.141592653589793
-#define DegreeToRadian(degree) ((degree) * PI / 180)
-
-void DrawGrid(HDC hdc, POINT center, int Width, int Height, int Count);
-void DrawCircle(HDC hdc, POINT center, int radius);
-void DrawSunFlower(HDC hdc, POINT c0, int r0, int x);
-void DrawStar(HDC hdc, POINT c0, int r0);
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
@@ -119,6 +112,19 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+#define timer_ID_1 1
+
+//double LengthPts(POINT pt1, POINT pt2)
+//{
+//    return (sqrt((float)(pt2.x - pt1.x) * (pt2.x - pt1.x) + (float)(pt2.y - pt1.y) * (pt2.y - pt1.y)));
+//}
+//
+//BOOL InCirCle(POINT pt1, POINT pt2)
+//{
+//    if (LengthPts(pt1, pt2) < circleRadius) return TRUE;
+//    else return FALSE;
+//}
+
 //
 //  함수: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -135,99 +141,105 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     PAINTSTRUCT ps;
     HDC hdc;
-
-    /*static TCHAR str[100] = L"초기값";
-    static list<TCHAR*> li;
-    static int count, yPos;
-    SIZE size;*/
+    /*static TCHAR tLeft[10] = L"왼쪽";
+    static TCHAR tRight[10] = L"오른쪽";
+    static TCHAR tUp[10] = L"위쪽";
+    static TCHAR tDown[10] = L"아래쪽";
+    static bool isLeft = false;
+    static bool isRight = false;
+    static bool isUp = false;
+    static bool isDown = false;*/
+    static vector<CObject*> cobs;
+    static POINT ptMousePos;
+    static RECT rectView;
+    static bool bFlag = false;
 
     switch (message)
     {
-    //case WM_CREATE:
-    //    /*count = 0;
-    //    yPos = 200;
-    //    CreateCaret(hWnd, NULL, 5, 15);
-    //    ShowCaret(hWnd);*/
-    //    break;
-    //case WM_KEYDOWN:
-    //    {
-    //        int breakpoint = 999;
-    //    }
-    //    break;
-    //case WM_KEYUP:
-    //    {
-    //        int breakpoint = 999;
-    //    }
-    //    break;
-    //case WM_CHAR:
-    //    {
-    //        int breakpoint = 999;
-    //        if (wParam == VK_BACK && count > 0)
-    //        {
-    //            count--;
-    //        }
-    //        else if (wParam == VK_RETURN)
-    //        {
-    //            TCHAR* temp = new TCHAR[_tcslen(str) + 1];
-    //            wcscpy_s(temp, _tcslen(str) + 1, str);
-
-    //           
-    //            if (li.size() == 10)
-    //            {
-    //                delete[] li.front();
-    //                li.pop_front();
-    //            }
-
-    //            li.push_back(temp);
-    //            count = 0;
-    //        }
-    //        else
-    //        {
-    //            str[count++] = wParam;
-    //        }
-    //        str[count] = NULL;
-    //        InvalidateRect(hWnd, NULL, TRUE);
-    //    }
-    //    break;
-
-    case WM_PAINT:
+    case WM_CREATE:
+        srand(time(NULL));
+        GetClientRect(hWnd, &rectView);
+        SetTimer(hWnd, timer_ID_1, 100, NULL);
+        break;
+    case WM_TIMER:
+        if (wParam == timer_ID_1)
         {
-            hdc = BeginPaint(hWnd, &ps);
-            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            HPEN hPen, oldPen;
-            hPen = CreatePen(PS_SOLID, 5, RGB(255, 0, 255));
-            oldPen = (HPEN)SelectObject(hdc, hPen);
-            HBRUSH hBrush, oldBrush;
-            hBrush = CreateSolidBrush(RGB(0, 255, 255));
-            oldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+            if (!cobs.empty())
+            {
+                for (int i = 0; i < cobs.size(); i++)
+                {
+                    cobs[i]->Update();
+                }
+            }
 
-            POINT c0 = { 300, 300 };
-            int r0 = 100;
-            DrawStar(hdc, c0, r0);
+            InvalidateRgn(hWnd, NULL, TRUE);
+        }
+    case WM_KEYDOWN:
+        {
+            bFlag = true;
+            InvalidateRgn(hWnd, NULL, TRUE);
+        }
+        break;
+    case WM_KEYUP:
+        {
+            bFlag = false;
+            InvalidateRgn(hWnd, NULL, TRUE);
+        }
+        break;
 
-            SelectObject(hdc, oldPen);
-            DeleteObject(hPen);
-            SelectObject(hdc, oldBrush);
-            DeleteObject(oldBrush);
+    case WM_LBUTTONDOWN:
+    {
+        ptMousePos.x = LOWORD(lParam);
+        ptMousePos.y = HIWORD(lParam);
+        int type = rand() % 3 + 1;
+        switch (type)
+        {
+        case 1:
+            cobs.push_back(new CCircle(ptMousePos));
+            break;
+        case 2:
+            cobs.push_back(new CStar(ptMousePos));
+            break;
+        case 3:
+            cobs.push_back(new CRectangle(ptMousePos));
+            break;
+        }
+        InvalidateRgn(hWnd, NULL, TRUE);
+    }
+    break;
+    case WM_LBUTTONUP:
+    {
+        bFlag = FALSE;
+        InvalidateRgn(hWnd, NULL, TRUE);
+    }
+    break;
 
+    case WM_MOUSEMOVE:
+        if (bFlag)
+        {
+            /*ptCurPos.x = LOWORD(lParam);
+            ptCurPos.y = HIWORD(lParam);*/
+            InvalidateRgn(hWnd, NULL, TRUE);
+        }
+        break;
+    case WM_PAINT:
+    {
+        hdc = BeginPaint(hWnd, &ps);
+        // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
+        if (!cobs.empty())
+        {
+            for (int i = 0; i < cobs.size(); i++)
+            {
+                cobs[i]->Draw(hdc);
+            }
+        }
+            
             EndPaint(hWnd, &ps);
         }
         break;
-        //DrawGrid(hdc, center, 400, 300, 6);
 
-/*GetTextExtentPoint(hdc, str, _tcslen(str), &size);
-TextOut(hdc, 100, yPos, str, _tcslen(str));
-list<TCHAR*>::iterator iter = li.begin();
-if (!li.empty())
-{
-    for (int i = 0; i < 10; i++, iter++)
-    {
-        if (iter == li.end())
-            break;
-        TextOut(hdc, 100, yPos - 200 + i * 20, *iter, _tcslen(*iter));
-    }
-}
-SetCaretPos(100 + size.cx, 0 + yPos);*/
+
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -246,16 +258,17 @@ SetCaretPos(100 + size.cx, 0 + yPos);*/
         }
         break;
     case WM_DESTROY:
-        //HideCaret(hWnd);
-        //DestroyCaret();
-
-        ///* list 개체 동적배열 해제 및 리스트 삭제 */
-        //
-        //for (auto de : li)
-        //    delete[] de;
-        //li.clear();
-
+        KillTimer(hWnd, timer_ID_1);
         PostQuitMessage(0);
+
+        if (!cobs.empty())
+        {
+            for (int i = 0; i < cobs.size(); i++)
+            {
+                delete cobs[i];
+            }
+        }
+
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
@@ -281,68 +294,4 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
-}
-
-void DrawGrid(HDC hdc, POINT center, int Width, int Height, int Count)
-{
-    double gapX, gapY;
-
-    if (Count != 0)
-    {
-        gapX = Width / (double)Count;
-        gapY = Height / (double)Count;
-    }
-    else
-    {
-        Count++;
-        gapX = Width;
-        gapY = Height;
-    }
-
-    for (int i = 0; i < Count + 1; i++)
-    {
-        MoveToEx(hdc, center.x - Width / 2 + gapX * i, center.y + Height / 2, NULL);
-        LineTo(hdc, center.x - Width / 2 + gapX * i, center.y - Height / 2);
-        MoveToEx(hdc, center.x - Width / 2, center.y - Height / 2 + gapY * i, NULL);
-        LineTo(hdc, center.x + Width / 2, center.y - Height / 2 + gapY * i);
-    }
-}
-
-void DrawCircle(HDC hdc, POINT c, int r)
-{
-    Ellipse(hdc, c.x - r, c.y - r, c.x + r, c.y + r);
-}
-
-void DrawSunFlower(HDC hdc, POINT c0, int r0, int x)
-{
-    POINT c1;
-    double angle = DegreeToRadian(360.0 / x);
-    double r1 = (r0 * sin(angle / 2)) / (1 - sin(angle / 2));
-
-    for (int i = 0; i < x; i++)
-    {
-        c1.x = c0.x + cos(i * angle) * (r0 + r1);
-        c1.y = c0.y + sin(i * angle) * (r0 + r1);
-        DrawCircle(hdc, c1, r1);
-    }
-}
-
-void DrawStar(HDC hdc, POINT c0, int r0)
-{
-    double angle = DegreeToRadian(360.0 / 5);
-    double x = r0 / (2 * cos(angle / 2));
-    POINT p;
-    POINT point[10];
-
-    for (int i = 0; i < 5; i++)
-    {
-        p.x = c0.x + cos(i * angle) * x;
-        p.y = c0.y + sin(i * angle) * x;
-        point[2 * i] = p;
-        p.x = c0.x + cos(i * angle + angle / 2) * r0;
-        p.y = c0.y + sin(i * angle + angle / 2) * r0;
-        point[2 * i + 1] = p;
-    }
-
-    Polygon(hdc, point, 10);
 }

@@ -15,3 +15,7 @@
 #include <tchar.h>
 // C++ 런타임 헤더 파일입니다.
 #include <list>
+#include <vector>
+#include <ctime>
+// 사용자 헤더 파일
+#include "cobject.h"
