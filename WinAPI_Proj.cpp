@@ -159,7 +159,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
         srand(time(NULL));
         GetClientRect(hWnd, &rectView);
-        SetTimer(hWnd, timer_ID_1, 100, NULL);
+        SetTimer(hWnd, timer_ID_1, 10, NULL);
         break;
     case WM_TIMER:
         if (wParam == timer_ID_1)

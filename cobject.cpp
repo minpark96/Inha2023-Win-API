@@ -4,9 +4,10 @@ CObject::CObject(POINT p, int type)
 {
     cx = p.x;
     cy = p.y;
-    speed = rand() / MAX * 9 + 3;
-    va = rand() / HALF - 1;
-    vb = rand() / HALF - 1;
+    double speed = rand() / MAX * 9 + 3;
+    vx = (rand() / HALF - 1) * speed;
+    vy = (rand() / HALF - 1) * speed;
+    volume = 0;
     this->type = type;
 }
 
@@ -16,8 +17,8 @@ CObject::~CObject()
 
 void CObject::Update()
 {
-    cx += va * speed;
-    cy += vb * speed;
+    cx += vx;
+    cy += vy;
 }
 
 double CObject::distance(const CObject& other) const
@@ -25,11 +26,10 @@ double CObject::distance(const CObject& other) const
     return sqrt((cx - other.cx) * (cx - other.cx) + (cy - other.cy) * (cy - other.cy));
 }
 
-void CObject::SetPosition(double na, double nb)
+void CObject::SetPositionBoundary(double na, double nb)
 {
-        va *= na;
-
-        vb *= nb;
+        vx *= na;
+        vy *= nb;
 }
 
 int CObject::GetType() const
@@ -37,9 +37,25 @@ int CObject::GetType() const
     return type;
 }
 
+double CObject::GetVolume() const
+{
+    return volume;
+}
+
+double CObject::GetVX() const
+{
+    return vx;
+}
+
+double CObject::GetVY() const
+{
+    return vy;
+}
+
 CCircle::CCircle(POINT p, int type) : CObject(p, type)
 {
     radius = rand() % 90 + 10;
+    volume = PI * radius * radius;
 }
 
 void CCircle::Draw(HDC hdc)
@@ -114,14 +130,36 @@ double CCircle::GetRadius() const
     return radius;
 }
 
+void CCircle::SetPositionCollsion(CObject& other)
+{
+    float vX1, vY1, vX2, vY2, m1, m2;
+    double vol = other.GetVolume();
+    double va = other.GetVX();
+    double vb = other.GetVY();
+
+    // 충돌 전의 운동량 벡터 계산
+    double p1 = volume * sqrt(vx * vx + vy * vy);
+    double p2 = vol * sqrt(va * va + vb * vb);
+    double sumP = p1 + p2;
+    double theta1 = atan2(vy, vx);
+    double theta2 = atan2(vb, va);
+    double phi = atan2(vb - vy, va - vx);
+    vx = ((p1 * cos(theta1 - phi) * (volume - vol) + 2 * vol * p2 * cos(theta2 - phi)) / sumP) * cos(phi) + p1 * sin(theta1 - phi) * cos(phi + PI / 2);
+    vy = ((p1 * cos(theta1 - phi) * (m1 - m2) + 2 * m2 * p2 * cos(theta2 - phi)) / sumP) * sin(phi) + p1 * sin(theta1 - phi) * sin(phi + PI / 2);
+    other.vx = ((p2 * cos(theta2 - phi) * (m2 - m1) + 2 * m1 * p1 * cos(theta1 - phi)) / sumP) * cos(phi) + p2 * sin(theta2 - phi) * cos(phi + PI / 2);
+    float new_vy2 = ((p2 * cos(theta2 - phi) * (m2 - m1) + 2 * m1 * p1 * cos(theta1 - phi)) / sumP) * sin(phi) + p2 * sin(theta2 - phi) * sin(phi + PI / 2);
+}
+
 CStar::CStar(POINT p, int type) : CObject(p, type)
 {
     radius = rand() % 90 + 10;
+    angle = DegreeToRadian(360.0 / 5);
+    volume = radius * tan(angle / 2) * radius * 5;
 }
 
 void CStar::Draw(HDC hdc)
 {
-    double angle = DegreeToRadian(360.0 / 5);
+
     double x = radius / (2 * cos(angle / 2));
     POINT p;
     POINT point[10];
@@ -154,9 +192,14 @@ double CStar::GetRadius() const
     return radius;
 }
 
+void CStar::SetPositionCollsion(const CObject& other) const
+{
+}
+
 CRectangle::CRectangle(POINT p, int type) : CObject(p, type)
 {
     radius = rand() % 90 + 10;
+    volume = radius * radius;
 }
 
 void CRectangle::Draw(HDC hdc)
@@ -177,6 +220,10 @@ bool CRectangle::Collision(const CObject& other) const
 double CRectangle::GetRadius() const
 {
     return radius;
+}
+
+void CRectangle::SetPositionCollsion(const CObject& other) const
+{
 }
 
 
