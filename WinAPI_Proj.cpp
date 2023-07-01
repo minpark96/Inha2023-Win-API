@@ -149,7 +149,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool isRight = false;
     static bool isUp = false;
     static bool isDown = false;*/
-    static vector<CObject*> cobs;
+    static list<CObject*> objs;
     static POINT ptMousePos;
     static RECT rectView;
     static bool bFlag = false;
@@ -164,17 +164,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_TIMER:
         if (wParam == timer_ID_1)
         {
-            if (!cobs.empty())
+            if (!objs.empty())
             {
-                for (int i = 0; i < cobs.size(); i++)
-                {
-                    cobs[i]->Update();
+                for (auto it1 = objs.begin();  it1 != objs.end(); ++it1)
+                {       
+                    auto it2 = it1;
+                    ++it2;
+                    for (; it2 != objs.end(); ++it2)
+                    {
+                        if ((*it1)->Collision(**it2))
+                        {
+                            //(*it)->SetPosition();
+                        }
+
+                    }
+
+                    if ((*it1)->CollisionBoundary(1, rectView.left, rectView.right))
+                        (*it1)->SetPosition(-1, 1);
+
+                    if ((*it1)->CollisionBoundary(0, rectView.top, rectView.bottom))
+                        (*it1)->SetPosition(1, -1);
+                        
+                    (*it1)->Update();
                 }
             }
 
             InvalidateRgn(hWnd, NULL, TRUE);
         }
-    case WM_KEYDOWN:
+        break;
+    /*case WM_KEYDOWN:
         {
             bFlag = true;
             InvalidateRgn(hWnd, NULL, TRUE);
@@ -185,29 +203,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             bFlag = false;
             InvalidateRgn(hWnd, NULL, TRUE);
         }
-        break;
+        break;*/
 
     case WM_LBUTTONDOWN:
     {
         ptMousePos.x = LOWORD(lParam);
         ptMousePos.y = HIWORD(lParam);
         int type = rand() % 3 + 1;
-        switch (type)
+        switch (1)
         {
         case 1:
-            cobs.push_back(new CCircle(ptMousePos));
+            objs.push_back(new CCircle(ptMousePos, type));
             break;
         case 2:
-            cobs.push_back(new CStar(ptMousePos));
+            objs.push_back(new CStar(ptMousePos, type));
             break;
         case 3:
-            cobs.push_back(new CRectangle(ptMousePos));
+            objs.push_back(new CRectangle(ptMousePos, type));
             break;
         }
         InvalidateRgn(hWnd, NULL, TRUE);
     }
     break;
-    case WM_LBUTTONUP:
+    /*case WM_LBUTTONUP:
     {
         bFlag = FALSE;
         InvalidateRgn(hWnd, NULL, TRUE);
@@ -217,21 +235,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_MOUSEMOVE:
         if (bFlag)
         {
-            /*ptCurPos.x = LOWORD(lParam);
-            ptCurPos.y = HIWORD(lParam);*/
             InvalidateRgn(hWnd, NULL, TRUE);
         }
-        break;
+        break;*/
     case WM_PAINT:
     {
         hdc = BeginPaint(hWnd, &ps);
         // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
 
-        if (!cobs.empty())
+        if (!objs.empty())
         {
-            for (int i = 0; i < cobs.size(); i++)
+            for (CObject* obj : objs)
             {
-                cobs[i]->Draw(hdc);
+                obj->Draw(hdc);
             }
         }
             
@@ -261,11 +277,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         KillTimer(hWnd, timer_ID_1);
         PostQuitMessage(0);
 
-        if (!cobs.empty())
+        if (!objs.empty())
         {
-            for (int i = 0; i < cobs.size(); i++)
+            for (CObject* obj : objs)
             {
-                delete cobs[i];
+                delete obj;
             }
         }
 
