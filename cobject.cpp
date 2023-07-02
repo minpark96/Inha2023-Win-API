@@ -4,7 +4,7 @@ CObject::CObject(POINT p, int type)
 {
     cx = p.x;
     cy = p.y;
-    double speed = rand() / MAX * 9 + 3;
+    double speed = rand() / MAX * 3 + 3;
     vx = (rand() / HALF - 1) * speed;
     vy = (rand() / HALF - 1) * speed;
     volume = 0;
@@ -52,9 +52,19 @@ double CObject::GetVY() const
     return vy;
 }
 
+void CObject::SetVX(double v)
+{
+    vx = v;
+}
+
+void CObject::SetVY(double v)
+{
+    vy = v;
+}
+
 CCircle::CCircle(POINT p, int type) : CObject(p, type)
 {
-    radius = rand() % 90 + 10;
+    radius = rand() % 50 + 10;
     volume = PI * radius * radius;
 }
 
@@ -132,22 +142,26 @@ double CCircle::GetRadius() const
 
 void CCircle::SetPositionCollsion(CObject& other)
 {
-    float vX1, vY1, vX2, vY2, m1, m2;
     double vol = other.GetVolume();
     double va = other.GetVX();
     double vb = other.GetVY();
 
     // 충돌 전의 운동량 벡터 계산
-    double p1 = volume * sqrt(vx * vx + vy * vy);
-    double p2 = vol * sqrt(va * va + vb * vb);
-    double sumP = p1 + p2;
-    double theta1 = atan2(vy, vx);
-    double theta2 = atan2(vb, va);
-    double phi = atan2(vb - vy, va - vx);
-    vx = ((p1 * cos(theta1 - phi) * (volume - vol) + 2 * vol * p2 * cos(theta2 - phi)) / sumP) * cos(phi) + p1 * sin(theta1 - phi) * cos(phi + PI / 2);
-    vy = ((p1 * cos(theta1 - phi) * (m1 - m2) + 2 * m2 * p2 * cos(theta2 - phi)) / sumP) * sin(phi) + p1 * sin(theta1 - phi) * sin(phi + PI / 2);
-    other.vx = ((p2 * cos(theta2 - phi) * (m2 - m1) + 2 * m1 * p1 * cos(theta1 - phi)) / sumP) * cos(phi) + p2 * sin(theta2 - phi) * cos(phi + PI / 2);
-    float new_vy2 = ((p2 * cos(theta2 - phi) * (m2 - m1) + 2 * m1 * p1 * cos(theta1 - phi)) / sumP) * sin(phi) + p2 * sin(theta2 - phi) * sin(phi + PI / 2);
+    //double p1 = volume * sqrt(vx * vx + vy * vy);
+    //double p2 = vol * sqrt(va * va + vb * vb);
+    //double sumP = p1 + p2;
+    //double theta1 = atan2(vy, vx);
+    //double theta2 = atan2(vb, va);
+    //double phi = atan2(vb - vy, va - vx);
+    double nvx = ((volume - vol) * vx + 2 * vol * va) / (volume + vol);
+    double nvy = ((volume - vol) * vy + 2 * vol * vb) / (volume + vol);
+    va = ((vol - volume) * va + 2 * volume * vx) / (volume + vol);
+    vb = ((vol - volume) * vb + 2 * volume * vy) / (volume + vol);
+
+    vx = nvx;
+    vy = nvy;
+    other.SetVX(va);
+    other.SetVY(vb);
 }
 
 CStar::CStar(POINT p, int type) : CObject(p, type)
@@ -192,7 +206,7 @@ double CStar::GetRadius() const
     return radius;
 }
 
-void CStar::SetPositionCollsion(const CObject& other) const
+void CStar::SetPositionCollsion(CObject& other)
 {
 }
 
@@ -222,7 +236,7 @@ double CRectangle::GetRadius() const
     return radius;
 }
 
-void CRectangle::SetPositionCollsion(const CObject& other) const
+void CRectangle::SetPositionCollsion(CObject& other)
 {
 }
 

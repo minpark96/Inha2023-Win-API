@@ -29,6 +29,8 @@ public:
 	double GetVolume() const;
 	double GetVX() const;
 	double GetVY() const;
+	void SetVX(double v);
+	void SetVY(double v);
 };
 
 class CCircle : public CObject

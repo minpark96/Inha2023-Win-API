@@ -166,30 +166,45 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             if (!objs.empty())
             {
-                for (auto it1 = objs.begin();  it1 != objs.end(); ++it1)
-                {       
+                for (auto it1 = objs.begin(); it1 != objs.end(); ++it1)
+                {
                     auto it2 = it1;
                     ++it2;
                     for (; it2 != objs.end(); ++it2)
                     {
                         if ((*it1)->Collision(**it2))
                         {
-                            //(*it)->SetPosition();
+                            (*it1)->SetPositionCollsion(**it2);
+                            do
+                            {
+                                (*it1)->Update();
+                                (*it2)->Update();
+                            } while ((*it1)->Collision(**it2));
                         }
-
                     }
 
                     if ((*it1)->CollisionBoundary(1, rectView.left, rectView.right))
-                        (*it1)->SetPosition(-1, 1);
-
+                    {
+                        (*it1)->SetPositionBoundary(-1, 1);
+                        do
+                        {
+                            (*it1)->Update();
+                        } while ((*it1)->CollisionBoundary(1, rectView.left, rectView.right));
+                    }
+                    
                     if ((*it1)->CollisionBoundary(0, rectView.top, rectView.bottom))
-                        (*it1)->SetPosition(1, -1);
-                        
+                    {
+                        (*it1)->SetPositionBoundary(1, -1);
+                        do
+                        {
+                            (*it1)->Update();
+                        } while ((*it1)->CollisionBoundary(0, rectView.top, rectView.bottom));
+                    }
+
                     (*it1)->Update();
                 }
+                InvalidateRgn(hWnd, NULL, TRUE);
             }
-
-            InvalidateRgn(hWnd, NULL, TRUE);
         }
         break;
     /*case WM_KEYDOWN:
@@ -213,13 +228,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (1)
         {
         case 1:
-            objs.push_back(new CCircle(ptMousePos, type));
+            objs.push_back(new CCircle(ptMousePos, 1));
             break;
         case 2:
-            objs.push_back(new CStar(ptMousePos, type));
+            objs.push_back(new CStar(ptMousePos, 2));
             break;
         case 3:
-            objs.push_back(new CRectangle(ptMousePos, type));
+            objs.push_back(new CRectangle(ptMousePos, 3));
             break;
         }
         InvalidateRgn(hWnd, NULL, TRUE);
