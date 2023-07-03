@@ -114,6 +114,51 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 #define timer_ID_1 1
 
+void OutFromFile(TCHAR filename[], HWND hwnd)
+{
+    FILE* fPtr;
+    HDC hdc;
+    int line;
+    TCHAR buffer[500];
+    line = 0;
+    hdc = GetDC(hwnd);
+#ifndef _UNICODE
+    _tfopen_s(&fPtr, filename, _T("r, ccs = UNICODE"));
+#else
+    _tfopen_s(&fPtr, filename, _T("r"));
+#endif
+    while (_fgetts(buffer, 100, fPtr) != NULL)
+    {
+        if (buffer[_tcslen(buffer) - 1] == _T('\n'))
+            buffer[_tcslen(buffer) - 1] = NULL;
+        TextOut(hdc, 0, line * 20, buffer, _tcslen(buffer));
+        line++;
+    }
+    fclose(fPtr);
+    ReleaseDC(hwnd, hdc);
+}
+
+void OutToFile(TCHAR filename[], std::list<TCHAR*> li)
+{
+    FILE* fPtr;
+    TCHAR buffer[500];
+#ifndef _UNICODE
+    _tfopen_s(&fPtr, filename, _T("r, ccs = UNICODE"));
+#else
+    _tfopen_s(&fPtr, filename, _T("r"));
+#endif
+    if (!li.empty())
+    {
+        for (auto it = li.begin(); it != li.end(); it++)
+        {
+            _fputts(*it, fPtr);
+        }
+
+    }
+
+    fclose(fPtr);
+}
+
 //double LengthPts(POINT pt1, POINT pt2)
 //{
 //    return (sqrt((float)(pt2.x - pt1.x) * (pt2.x - pt1.x) + (float)(pt2.y - pt1.y) * (pt2.y - pt1.y)));
@@ -141,18 +186,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     PAINTSTRUCT ps;
     HDC hdc;
-    /*static TCHAR tLeft[10] = L"왼쪽";
-    static TCHAR tRight[10] = L"오른쪽";
-    static TCHAR tUp[10] = L"위쪽";
-    static TCHAR tDown[10] = L"아래쪽";
-    static bool isLeft = false;
-    static bool isRight = false;
-    static bool isUp = false;
-    static bool isDown = false;*/
+
     static list<CObject*> objs;
     static POINT ptMousePos;
     static RECT rectView;
     static bool bFlag = false;
+    enum type {NONE, CIRCLE, RECTANGLE, STAR};
+    static int selectedMenu = NONE;
+
+    /* 채팅창 */
+    static TCHAR str[100] = L"초기값";
+    static list<TCHAR*> li;
+    static int count, yPos;
+    SIZE size;
+
+    TCHAR filter[] = _T("Every file(*.*) \0*.*\0Text file\0*.txt;*.doc\0");
+    TCHAR lpstrFile[100] = _T("");
 
     switch (message)
     {
@@ -160,6 +209,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         srand(time(NULL));
         GetClientRect(hWnd, &rectView);
         SetTimer(hWnd, timer_ID_1, 10, NULL);
+        count = 0;
+        yPos = 200;
+        CreateCaret(hWnd, NULL, 5, 15);
+        ShowCaret(hWnd);
         break;
     case WM_TIMER:
         if (wParam == timer_ID_1)
@@ -174,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     {
                         if ((*it1)->Collision(**it2))
                         {
-                            (*it1)->SetPositionCollsion(**it2);
+                            (*it1)->SetPosition(**it2);
                             do
                             {
                                 (*it1)->Update();
@@ -219,22 +272,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             InvalidateRgn(hWnd, NULL, TRUE);
         }
         break;*/
+    case WM_CHAR:
+    {
+        if (wParam == VK_BACK && count > 0)
+        {
+            count--;
+        }
+        else if (wParam == VK_RETURN)
+        {
+            TCHAR* temp = new TCHAR[_tcslen(str) + 1];
+            wcscpy_s(temp, _tcslen(str) + 1, str);
 
+            if (li.size() == 10)
+            {
+                delete[] li.front();
+                li.pop_front();
+            }
+
+            li.push_back(temp);
+            count = 0;
+        }
+        else
+        {
+            str[count++] = wParam;
+        }
+        str[count] = NULL;
+        InvalidateRect(hWnd, NULL, TRUE);
+    }
+    break;
     case WM_LBUTTONDOWN:
     {
         ptMousePos.x = LOWORD(lParam);
         ptMousePos.y = HIWORD(lParam);
-        int type = rand() % 3 + 1;
-        switch (1)
+        switch (selectedMenu)
         {
         case 1:
             objs.push_back(new CCircle(ptMousePos, 1));
             break;
         case 2:
-            objs.push_back(new CStar(ptMousePos, 2));
+            objs.push_back(new CRectangle(ptMousePos, 2));
             break;
         case 3:
-            objs.push_back(new CRectangle(ptMousePos, 3));
+            objs.push_back(new CStar(ptMousePos, 3));
+            break;
+        default:
             break;
         }
         InvalidateRgn(hWnd, NULL, TRUE);
@@ -265,7 +346,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 obj->Draw(hdc);
             }
         }
-            
+
+        GetTextExtentPoint(hdc, str, _tcslen(str), &size);
+        TextOut(hdc, 100, yPos, str, _tcslen(str));
+        list<TCHAR*>::iterator iter = li.begin();
+        if (!li.empty())
+        {
+            for (int i = 0; i < 10; i++, iter++)
+            {
+                if (iter == li.end())
+                    break;
+                TextOut(hdc, 100, yPos - 200 + i * 20, *iter, _tcslen(*iter));
+            }
+        }
+
+        SetCaretPos(100 + size.cx, 0 + yPos);
+
             EndPaint(hWnd, &ps);
         }
         break;
@@ -277,6 +373,72 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             // 메뉴 선택을 구문 분석합니다:
             switch (wmId)
             {
+            case ID_DRAW_CIRCLE:
+                // : 원 그리기
+            {
+                int temp = selectedMenu;
+
+                int ans = MessageBox(hWnd, _T("원 그릴래?"), _T("도형 선택"), MB_YESNOCANCEL);
+                if (ans == IDYES)
+                {
+                    selectedMenu = CIRCLE;
+                }
+                else if (ans == IDNO)
+                {
+                    selectedMenu = NONE;
+                }
+                else
+                {
+                    selectedMenu = temp;
+                }
+            }
+                break;
+            case ID_DRAW_RECT:
+                // : 사각형 그리기
+                selectedMenu = RECTANGLE;
+                break;
+            case ID_DRAW_STAR:
+                // : 별 그리기
+                selectedMenu = STAR;
+                break;
+            case ID_FILEOPEN:
+            {
+                OPENFILENAME ofn;
+                memset(&ofn, 0, sizeof(OPENFILENAME));
+                ofn.lStructSize = sizeof(OPENFILENAME);
+                ofn.hwndOwner = hWnd;
+                ofn.lpstrFilter = filter;
+                ofn.lpstrFile = lpstrFile;
+                ofn.nMaxFile = 100;
+                ofn.lpstrInitialDir = _T(".");
+                if (GetOpenFileName(&ofn) != 0)
+                {
+                    TCHAR str[100];
+                    _stprintf_s(str, _T("%s 파일을 열겠습니까?"), ofn.lpstrFile);
+                    MessageBox(hWnd, str, _T("파일 선택"), MB_OK);
+                    OutFromFile(ofn.lpstrFile, hWnd);
+                }
+            }
+                break;
+            case ID_FILESAVE:
+            {
+                OPENFILENAME sfn;
+                memset(&sfn, 0, sizeof(OPENFILENAME));
+                sfn.lStructSize = sizeof(OPENFILENAME);
+                sfn.hwndOwner = hWnd;
+                sfn.lpstrFilter = filter;
+                sfn.lpstrFile = lpstrFile;
+                sfn.nMaxFile = 256;
+                sfn.lpstrInitialDir = _T(".");
+                if (GetSaveFileName(&sfn) != 0)
+                {
+                    TCHAR str[100];
+                    _stprintf_s(str, _T("%s 파일로 저장하겠습니까?"), sfn.lpstrFile);
+                    MessageBox(hWnd, str, _T("저장하기 선택"), MB_OK);
+                    OutToFile(sfn.lpstrFile, li);
+                }
+            }
+            break;
             case IDM_ABOUT:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
                 break;
@@ -289,6 +451,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
+        HideCaret(hWnd);
+        DestroyCaret();
+
+        /* list 개체 동적배열 해제 및 리스트 삭제*/
+        for (auto de : li)
+            delete[] de;
+        li.clear();
+
         KillTimer(hWnd, timer_ID_1);
         PostQuitMessage(0);
 
@@ -326,3 +496,4 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return (INT_PTR)FALSE;
 }
+

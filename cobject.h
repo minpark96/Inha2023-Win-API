@@ -23,14 +23,16 @@ public:
 	virtual bool Collision(const CObject& other) const = 0;
 	double distance(const CObject& other) const;
 	void SetPositionBoundary(double na, double nb);
-	virtual void SetPositionCollsion(CObject& other) = 0;
-	//virtual void setVolume() const = 0;
+	virtual void SetPosition(CObject& other) = 0;
 	int GetType() const;
-	double GetVolume() const;
+	double GetCX() const;
+	double GetCY() const;
 	double GetVX() const;
 	double GetVY() const;
+	double GetVolume() const;
 	void SetVX(double v);
 	void SetVY(double v);
+	//virtual void setVolume() const = 0;
 };
 
 class CCircle : public CObject
@@ -43,7 +45,7 @@ public:
 	bool CollisionBoundary(int flag, const LONG& rect1, const LONG& rect2) const override;
 	bool Collision(const CObject& other) const override;
 	double GetRadius() const;
-	void SetPositionCollsion(CObject& other) override;
+	void SetPosition(CObject& other) override;
 	//void setVolume() const;
 };
 
@@ -52,13 +54,14 @@ class CStar : public CObject
 private:
 	double radius;
 	double angle;
+	double rotation;
 public:
 	CStar(POINT p, int type);
 	void Draw(HDC hdc) override;
 	bool CollisionBoundary(int flag, const LONG& rect1, const LONG& rect2) const override;
 	bool Collision(const CObject& other) const override;
 	double GetRadius() const;
-	void SetPositionCollsion(CObject& other) override;
+	void SetPosition(CObject& other) override;
 	//void setVolume() const;
 };
 
@@ -66,13 +69,15 @@ class CRectangle : public CObject
 {
 private:
 	double radius;
+	double angle;
+	double rotation;
 public:
 	CRectangle(POINT p, int type);
 	void Draw(HDC hdc) override;
 	bool CollisionBoundary(int flag, const LONG& rect1, const LONG& rect2) const override;
 	bool Collision(const CObject& other) const override;
 	double GetRadius() const;
-	void SetPositionCollsion(CObject& other) override;
+	void SetPosition(CObject& other) override;
 	//void setVolume() const;
 };
 

@@ -13,6 +13,8 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+#include <commdlg.h>
+#include <stdio.h>
 // C++ 런타임 헤더 파일입니다.
 #include <list>
 #include <iterator>
