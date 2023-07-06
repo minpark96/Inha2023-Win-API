@@ -20,4 +20,5 @@
 #include <iterator>
 #include <ctime>
 // 사용자 헤더 파일
-#include "cobject.h"
+//#include "cobject.h"
+#include "test.h"

@@ -37,7 +37,7 @@ public:
 
 class CCircle : public CObject
 {
-private :
+private:
 	double radius;
 public:
 	CCircle(POINT p, int type);
@@ -80,4 +80,3 @@ public:
 	void SetPosition(CObject& other) override;
 	//void setVolume() const;
 };
-
