@@ -20,12 +20,6 @@ double CObject::distance(const CObject& other) const
     return sqrt((cx - other.cx) * (cx - other.cx) + (cy - other.cy) * (cy - other.cy));
 }
 
-void CObject::SetPositionBoundary(double na, double nb)
-{
-    vx *= na;
-    vy *= nb;
-}
-
 int CObject::GetType() const
 {
     return type;
@@ -75,15 +69,48 @@ void CObject::SetVY(double v)
 {
     vy = v;
 }
+
 /*
 ===============================================================================
                                         원
 ===============================================================================
 */
+
 CCircle::CCircle(POINT p, int type) : CObject(p, type)
 {
     radius = rand() % 50 + 10;
     volume = PI * radius * radius;
+}
+
+void CCircle::Update(RECT* rectView)
+{
+    // 오른쪽
+    if (cx + radius >= rectView->right)
+    {
+        vx *= -1;
+        cx = rectView->right - radius;
+    }
+    // 왼쪽
+    if (cx - radius <= rectView->left)
+    {
+        vx *= -1;
+        cx = rectView->left + radius;
+    }
+    // 위
+    if (cy - radius <= rectView->top)
+    {
+        vy *= -1;
+        cy = rectView->top + radius;
+    }
+    // 아래
+    if (cy + radius >= rectView->bottom)
+    {
+        vy *= -1;
+        cy = rectView->bottom - radius;
+    }
+
+    cx += vx;
+    cy += vy;
 }
 
 void CCircle::Draw(HDC hdc)
@@ -91,32 +118,8 @@ void CCircle::Draw(HDC hdc)
     Ellipse(hdc, round(cx - radius), round(cy - radius), round(cx + radius), round(cy + radius));
 }
 
-bool CCircle::CollisionBoundary(int flag, const LONG& rect1, const LONG& rect2) const
-{
-    if (flag) // 좌, 우
-    {
-        if (cx - radius <= rect1 ||
-            cx + radius >= rect2)
-        {
-            return true;
-        }
-    }
-    else // 상, 하
-    {
-        if (cy - radius <= rect1 ||
-            cy + radius >= rect2)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool CCircle::Collision(const CObject& other) const
 {
-    bool collision = false;
-
     switch (other.GetType())
     {
     case 1: // 원과 원 충돌
@@ -124,7 +127,7 @@ bool CCircle::Collision(const CObject& other) const
         const CCircle* circle = dynamic_cast<const CCircle*>(&other);
         if (circle)
         {
-            collision = distance(*circle) <= radius + circle->radius;
+            return distance(*circle) <= radius + circle->radius;
         }
     }
     break;
@@ -133,7 +136,7 @@ bool CCircle::Collision(const CObject& other) const
         const CRectangle* rect = dynamic_cast<const CRectangle*>(&other);
         if (rect)
         {
-            collision = distance(*rect) <= radius + rect->GetRadius();
+            return distance(*rect) <= radius + rect->GetRadius();
         }
     }
     break;    
@@ -142,7 +145,7 @@ bool CCircle::Collision(const CObject& other) const
         const CStar* star = dynamic_cast<const CStar*>(&other);
         if (star)
         {
-            collision = distance(*star) <= radius + star->GetRadius();
+            return distance(*star) <= radius + star->GetRadius();
         }
     }
     break;
@@ -150,7 +153,7 @@ bool CCircle::Collision(const CObject& other) const
         break;
     }
 
-    return collision;
+    return false;
 }
 
 double CCircle::GetRadius() const
@@ -165,117 +168,238 @@ void CCircle::SetRadius(double r)
 
 void CCircle::SetPosition(CObject& other)
 {
+    /*
     // 원B의 속도 저장
     double va = other.GetVX();
     double vb = other.GetVY();
+    
     // 원A의 속도 임시 저장
     double tmp_vx = vx;
     double tmp_vy = vy;
+    
     // 원A의 속도를 원B의 속도로
     vx = va;
     vy = vb;
+    
     // 원B의 속도를 원A의 속도로
     other.SetVX(tmp_vx);
     other.SetVY(tmp_vy);
+    */
 
+
+    //================================================================================================================
+    
+
+    /*
+    // 원B의 속도 저장
+    double va = other.GetVX();
+    double vb = other.GetVY();
+
+
+    // 두 원의 중심 사이 벡터 (충돌 방향 벡터)
     double vnx = other.GetCX() - cx;
     double vny = other.GetCY() - cy;
 
-    // Calculate the distance between the centers of two objects
-    //double distance = sqrt(vnx * vnx + vny * vny);
 
-    // Calculate the unit vector (ux, uy) between the centers
-    //double ux = vnx / distance;
-    //double uy = vny / distance;
-
-    // Calculate the relative velocities
-    //double rel_vx = vx - va;
-    //double rel_vy = vy - vb;
-
-    // Calculate the dot product of the unit vector in the direction of the collision and the relative velocities
-    //double dot = rel_vx * ux + rel_vy * uy;
-
-    // Update the velocities considering the direction using the dot product, but maintain the original speed
-    //double nvx = vx - 2 * dot * ux;
-    //double nvy = vy - 2 * dot * uy;
-    //double navx = va + 2 * dot * ux;
-    //double navy = vb + 2 * dot * uy;
-
-    // Set the updated velocities to the CCircle object and the CObject
+    // 두 원의 중심의 거리
+    double d = distance(other);
+    
+    //*===============================================================================================================
+    //* 거리 계산 공식: 두 점 사이의 거리를 계산하기 위해 유클리드 거리 계산 공식을 사용합니다.
+    //* distance = sqrt((x2 - x1)^2 + (y2 - y1)^2)
+    //*===============================================================================================================
 
 
-    //double vol = other.GetVolume();
-    //double va = other.GetVX();
-    //double vb = other.GetVY();
-    //double vnx = other.GetCX() - cx;
-    //double vny = other.GetCY() - cy;
+    // 중심 사이 벡터의 단위 벡터
+    double ux = vnx / d;
+    double uy = vny / d;
 
-    //// Calculate the distance between the centers of the two objects.
-    //double distance = this->distance(other);
+    //*===============================================================================================================
+    //* 단위 벡터 계산 공식: 두 점 사이의 단위 벡터는 거리로 나눈 값입니다.
+    //* ux = (x2 - x1) / distance
+    //* uy = (y2 - y1) / distance
+    //*===============================================================================================================
 
-    //// Calculate the unit vector (ux, uy) between the centers.
-    //double ux = vnx / distance;
-    //double uy = vny / distance;
 
-    //// Calculate the relative velocities.
-    //double rel_vx = vx - va;
-    //double rel_vy = vy - vb;
+    // 상대 속도 벡터
+    double rel_vx = vx - va;
+    double rel_vy = vy - vb;
 
-    //// Calculate the dot product of the unit vector in the direction of the collision and the relative velocities.
-    //double dot = rel_vx * ux + rel_vy * uy;
+    //*===============================================================================================================
+    //* 상대 속도를 사용하는 이유는 충돌 시 발생하는 속도 및 방향 변화를 구하기 위해서입니다.
+    //* 상대 속도는 한 객체의 속도와 다른 객체의 속도 사이의 차이를 나타냅니다.
+    //* 이를 사용하면 두 객체 간의 상호 작용이 어떻게 충돌 시 발생하는 속도 변화에 영향을 주는지 계산할 수 있습니다. 
+    //* 상대 속도를 사용하면 충돌에서 발생한 각 객체의 속도 변화를 더 정확하게 예측할 수 있습니다. 
+    //* 이를 통해 객체가 서로 상호 작용하는 방식에 대한 명확한 이해와 충돌에서 일어나는 속도 및 방향 변화를 얻을 수 있습니다.
+    //* 또한, 상대 속도를 사용하면 충돌 기준으로 얼마나 다른 각 객체의 속도를 수정해야 하는지 얻을 수 있습니다.
+    //* 이렇게 하면 충돌하는 두 객체 사이의 원래 거리를 유지하면서 움직임을 재현할 수 있습니다.
+    //*===============================================================================================================
+    
 
-    //// Calculate the collision impulse.
-    //double impulse = 2 * vol * dot / (volume + vol);
+    // 상대 속도 벡터와 중심 사이 단위 벡터 내적 (충돌 방향의 정사영 계산)
+    double dot = rel_vx * ux + rel_vy * uy;
+    
+    //*===============================================================================================================
+    //* 벡터의 내적 공식: 벡터 a와 벡터 b의 내적은 각 성분을 곱한 값의 합입니다.
+    //* dot_product = a.x * b.x + a.y * b.y
+    //*
+    //* 충돌 방향(단위 벡터)과 상대 속도 벡터의 내적(dot product)을 계산하는 이유는 
+    //* 충돌 시 발생하는 속도 변화를 구하기 위해서입니다.
+    //* 내적을 사용하면 두 벡터 사이의 각도에 따른 영향을 고려할 수 있기 때문에, 
+    //* 충돌 시 발생하는 방향 변화를 더 정확하게 계산할 수 있습니다.
+    //* 내적의 값은 두 벡터의 길이와 두 벡터 사이의 각도(cosine)를 곱한 값입니다.
+    //* 즉, 내적은 두 벡터 사이의 각도 정보를 가지고 있습니다.
+    //* 충돌 시에는 속도 벡터의 변화가 두 객체 사이의 각도에 따라서 달라집니다. 
+    //* 상대 속도 벡터와 충돌 방향의 단위 벡터의 내적을 통해 충돌 방향과 관련된 속도 변화를 얻을 수 있습니다. 
+    //* 
+    //* 이 계산 결과는 두 벡터가 얼마나 유사한 방향을 가지고 있는지를 나타내는 값입니다.
+    //* 두 벡터가 같은 방향일 경우, 내적의 값은 두 벡터의 길이의 곱만큼 크게 됩니다.
+    //* 반면, 두 벡터가 수직일 경우 내적의 값은 0이 됩니다.
+    //* 이 경우는 공식을 적용해보면 코사인 90도 값이기 때문입니다.
+    //* 따라서 이 코드에서 dot_product = (rel_vx * ux + rel_vy * uy)의 계산 결과가 0에 가까울수록
+    //* 두 객체의 속도 벡터가 충돌 방향과 수직에 가까워지므로 충돌 방향에 대한 영향이 적어집니다.
+    //* 반면, 내적의 값이 크면 큰 방향 수정이 필요합니다.
+    //* 내적의 값이 양수일 경우, 두 벡터가 같은 방향을 가지고 있고, 따라서 충돌 방향에 따라 속도 변화가 크게 일어납니다.
+    //* 내적의 값이 음수일 경우, 두 벡터가 수직에 가깝거나 반대 방향을 가지고 있으므로 
+    //* 충돌 방향에 따라 속도 변화가 작게 일어납니다.
+    //*===============================================================================================================
+    
 
-    //// Update the velocities of the CCircle object by considering the collision impulse.
-    //double nvx = vx - ux * impulse;
-    //double nvy = vy - uy * impulse;
+    // 내적을 사용하여 속도를 업데이트
+    double nvx = vx - 2 * dot * ux;
+    double nvy = vy - 2 * dot * uy;
+    double navx = va + 2 * dot * ux;
+    double navy = vb + 2 * dot * uy;
+    
+    //*===============================================================================================================
+    //* 충돌에 따른 속도 업데이트 공식: 충돌 방향에 따른 속도 변화와 원래 속도를 고려하여 업데이트됩니다.
+    //* 객체 A: 
+    //* nvx = vx - 2 * dot * ux
+    //* nvy = vy - 2 * dot * uy
+    //* 객체 B: 
+    //* navx = va + 2 * dot * ux
+    //* navy = vb + 2 * dot * uy
+    //*
+    //* dot: 충돌 방향에 대한 상대 속도 벡터의 정사영을 계산한 후에 얻어진 값입니다.
+    //*
+    //* 정사영(투영): 벡터의 정사영은 한 벡터가 다른 벡터에 떨어뜨릴 때 그림자와 같아서 
+    //* 한 벡터의 특정 요소를 포함하는 직교 방향에 대한 정보를 제공합니다.
+    //*
+    //* 2와 ux, uy를 곱해주는 이유: 충돌하는 두 물체는 작용-반작용 법칙에 따라 서로 동일한 힘이 상호 작용합니다.
+    //* 이를 포함하려면 속도 변화에 2를 곱해줍니다. 
+    //* 정사영에 2를 곱해 매칭된 힘을 구한 다음 이를 충돌 단위 벡터(ux, uy)와 곱하게 되면 
+    //* 충돌 방향에 따른 속도 변화를 얻을 수 있습니다.
+    //* 따라서, 2를 곱한 후 충돌 단위 벡터와 곱하는 이유는 작용-반작용 법칙과 
+    //* 모멘텀 보존 법칙(운동량 보존 법칙)을 반영하려는 것입니다.
+    //*===============================================================================================================
+    
+    
+    // 원래 속력과 업데이트된 속력
+    double org_speed = sqrt(vx * vx + vy * vy);
+    double new_speed = sqrt(nvx * nvx + nvy * nvy);
+    double org_speed_other = sqrt(va * va + vb * vb);
+    double new_speed_other = sqrt(navx * navx + navy * navy);
+    
 
-    //// Update the velocities of the CObject by considering the opposite collision impulse.
-    //double navx = va + (ux * impulse * volume) / vol;
-    //double navy = vb + (uy * impulse * volume) / vol;
+    // 업데이트된 속도를 원래 속력으로 정규화
+    nvx = nvx * org_speed / new_speed;
+    nvy = nvy * org_speed / new_speed;
+    navx = navx * org_speed_other / new_speed_other;
+    navy = navy * org_speed_other / new_speed_other;
+    
+    //*===============================================================================================================
+    //* 원래 속력과 업데이트된 속력을 비교하여 업데이트된 속력을 원래 속력만큼 정규화합니다.
+    //* 이렇게 하면 방향은 바뀌지만 속력이 유지됩니다.
+    //* org_speed와 new_speed는 달랐지만 계산 후 업데이트된 nvx, nvy의 속력은 org_speed와 같아집니다.
+    //* 즉, 방향 변화만 반영됩니다.
+    //*===============================================================================================================
+    
 
-    //vx = nvx;
-    //vy = nvy;
-    //other.SetVX(navx);
-    //other.SetVY(navy);
+    // 업데이트된 속도를 객체에 설정
+    vx = nvx;
+    vy = nvy;
+    other.SetVX(navx);
+    other.SetVY(navy);
+    */
+    
+
+    //================================================================================================================
+
+
+    double vol_B = other.GetVolume();
+    double vx_B = other.GetVX();
+    double vy_B = other.GetVY();
+    double nol_x = other.GetCX() - cx;
+    double nol_y = other.GetCY() - cy;
+
+    // 두 원의 중심의 거리
+    double d = distance(other);
+
+    // 충돌 방향 벡터(두 원의 중심 사이 벡터)의 단위 벡터
+    double u_nol_x = nol_x / d;
+    double u_nol_y = nol_y / d;
+
+    // 상대 속도 벡터
+    double rel_vx = vx - vx_B;
+    double rel_vy = vy - vy_B;
+
+    // 상대 속도 벡터와 중심 사이 단위 벡터 내적 (충돌 방향의 정사영 계산)
+    double dot = rel_vx * u_nol_x + rel_vy * u_nol_y;
+
+    // 부피를 고려한 충격량을 계산 (물체의 밀도가 동일하여 부피가 질량과 같다고 가정)
+    double impulse_A = 2 * vol_B * dot / (volume + vol_B);
+    double impulse_B = 2 * volume * dot / (volume + vol_B);
+
+    //* 원시 모멘텀 및 에너지 보존 법칙에 따라 충격량 구하는 공식: 
+    //* impulse_A = 2 * m_B * dot / (m_A + m_B) -> B가 A에게 주는 충격량
+    //* impulse_B = 2 * m_A * dot / (m_A + m_B) -> A가 B에게 주는 충격량
+    //* 작용-반작용이므로 2를 곱해줍니다.
+
+    // 충격량에 따라 속도 벡터를 업데이트
+    double new_vx = vx - u_nol_x * impulse_A;
+    double new_vy = vy - u_nol_y * impulse_A;
+
+    // 다른 객체도 충격량에 따라 속도 벡터를 업데이트
+    double new_vx_B = vx_B + u_nol_x * impulse_B;
+    double new_vy_B = vy_B + u_nol_y * impulse_B;
+
+    // 업데이트된 속도를 객체에 설정
+    vx = new_vx;
+    vy = new_vy;
+    other.SetVX(new_vx_B);
+    other.SetVY(new_vy_B);
 }
 
-void CCircle::Update()
+int CCircle::Combination(CObject& other)
 {
-    cx += vx;
-    cy += vy;
+    CCircle* circle = dynamic_cast<CCircle*>(&other);
+
+    if (circle->volume + volume > 31416)
+        return 0;
+
+    if (circle->radius > radius)
+    { // 다른 원에 흡수
+        circle->SetVolume(circle->volume + volume);
+        double r = sqrt(circle->volume / PI);
+        circle->SetRadius(r);
+        return 1;
+    }
+    else
+    {
+        SetVolume(circle->volume + volume);
+        double r = sqrt(volume / PI);
+        SetRadius(r);
+        return 2;
+    }
 }
 
-void CCircle::TestUpdate(RECT* rectView)
+void CCircle::Decomposition()
 {
-    // 오른쪽
-    if (cx + radius >= rectView->right)
-    {
-        vx *= -1;
-        cx = rectView->right - radius;
-    }
-    // 왼쪽
-    if (cx - radius <= rectView->left)
-    {
-        vx *= -1;
-        cx = rectView->left + radius;
-    }
-    // 아래
-    if (cy - radius <= rectView->top)
-    {
-        vy *= -1;
-        cy = rectView->top + radius;
-    }
-    // 위
-    if (cy + radius >= rectView->bottom)
-    {
-        vy *= -1;
-        cy = rectView->bottom - radius;
-    }
+}
 
-    cx += vx;
-    cy += vy;
+void CCircle::SetVolume(double vol)
+{
+    volume = vol;
 }
 
 /*
@@ -291,6 +415,38 @@ CStar::CStar(POINT p, int type) : CObject(p, type)
     volume = radius * tan(angle / 2) * radius * 5;
     rotation = rand() % 72 + 1;
     angleVelocity = (rand() / HALF - 1) / 10;
+}
+
+void CStar::Update(RECT* rectView)
+{
+    // 오른쪽
+    if (cx + radius >= rectView->right)
+    {
+        vx *= -1;
+        cx = rectView->right - radius;
+    }
+    // 왼쪽
+    if (cx - radius <= rectView->left)
+    {
+        vx *= -1;
+        cx = rectView->left + radius;
+    }
+    // 위
+    if (cy - radius <= rectView->top)
+    {
+        vy *= -1;
+        cy = rectView->top + radius;
+    }
+    // 아래
+    if (cy + radius >= rectView->bottom)
+    {
+        vy *= -1;
+        cy = rectView->bottom - radius;
+    }
+
+    cx += vx;
+    cy += vy;
+    rotation += angleVelocity;
 }
 
 void CStar::Draw(HDC hdc)
@@ -312,32 +468,8 @@ void CStar::Draw(HDC hdc)
     Polygon(hdc, point, 10);
 }
 
-bool CStar::CollisionBoundary(int flag, const LONG& rect1, const LONG& rect2) const
-{
-    if (flag) // 좌, 우
-    {
-        if (cx - radius <= rect1 ||
-            cx + radius >= rect2)
-        {
-            return true;
-        }
-    }
-    else // 상, 하
-    {
-        if (cy - radius <= rect1 ||
-            cy + radius >= rect2)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool CStar::Collision(const CObject& other) const
 {
-    bool collision = false;
-
     switch (other.GetType())
     {
     case 1: // 별과 원 충돌
@@ -345,7 +477,7 @@ bool CStar::Collision(const CObject& other) const
         const CCircle* circle = dynamic_cast<const CCircle*>(&other);
         if (circle)
         {
-            collision = distance(*circle) <= radius + circle->GetRadius();
+            return distance(*circle) <= radius + circle->GetRadius();
         }
     }
     break;
@@ -354,7 +486,7 @@ bool CStar::Collision(const CObject& other) const
         const CRectangle* rect = dynamic_cast<const CRectangle*>(&other);
         if (rect)
         {
-            collision = distance(*rect) <= radius + rect->GetRadius();
+            return distance(*rect) <= radius + rect->GetRadius();
         }
     }
     break; 
@@ -363,7 +495,7 @@ bool CStar::Collision(const CObject& other) const
         const CStar* star = dynamic_cast<const CStar*>(&other);
         if (star)
         {
-            collision = distance(*star) <= radius + star->radius;
+            return distance(*star) <= radius + star->radius;
         }
     }
     break;
@@ -371,7 +503,7 @@ bool CStar::Collision(const CObject& other) const
         break;
     }
 
-    return collision;
+    return false;
 }
 
 double CStar::GetRadius() const
@@ -379,85 +511,87 @@ double CStar::GetRadius() const
     return radius;
 }
 
-void CStar::Update()
+void CStar::SetRadius(double r)
 {
-    cx += vx;
-    cy += vy;
-    rotation += angleVelocity;
-}
-
-void CStar::TestUpdate(RECT* rectView)
-{
+    radius = r;
 }
 
 void CStar::SetPosition(CObject& other)
 {
-    double va = other.GetVX();
-    double vb = other.GetVY();
-    double vnx = other.GetCX() - cx;
-    double vny = other.GetCY() - cy;
+    double vol_B = other.GetVolume();
+    double vx_B = other.GetVX();
+    double vy_B = other.GetVY();
+    double nol_x = other.GetCX() - cx;
+    double nol_y = other.GetCY() - cy;
 
-    // Calculate the distance between the centers of two objects
-    double distance = sqrt(vnx * vnx + vny * vny);
+    // 두 원의 중심의 거리
+    double d = distance(other);
 
-    // Calculate the unit vector (ux, uy) between the centers
-    double ux = vnx / distance;
-    double uy = vny / distance;
+    // 충돌 방향 벡터(두 원의 중심 사이 벡터)의 단위 벡터
+    double u_nol_x = nol_x / d;
+    double u_nol_y = nol_y / d;
 
-    // Calculate the relative velocities
-    double rel_vx = vx - va;
-    double rel_vy = vy - vb;
+    // 상대 속도 벡터
+    double rel_vx = vx - vx_B;
+    double rel_vy = vy - vy_B;
 
-    // Calculate the dot product of the unit vector in the direction of the collision and the relative velocities
-    double dot = rel_vx * ux + rel_vy * uy;
+    // 상대 속도 벡터와 중심 사이 단위 벡터 내적 (충돌 방향의 정사영 계산)
+    double dot = rel_vx * u_nol_x + rel_vy * u_nol_y;
 
-    // Update the velocities considering the direction using the dot product, but maintain the original speed
-    double nvx = vx - 2 * dot * ux;
-    double nvy = vy - 2 * dot * uy;
-    double navx = va + 2 * dot * ux;
-    double navy = vb + 2 * dot * uy;
+    // 부피를 고려한 충격량을 계산 (물체의 밀도가 동일하여 부피가 질량과 같다고 가정)
+    double impulse_A = 2 * vol_B * dot / (volume + vol_B);
+    double impulse_B = 2 * volume * dot / (volume + vol_B);
 
-    // Set the updated velocities to the CCircle object and the CObject
-    vx = nvx;
-    vy = nvy;
-    other.SetVX(navx);
-    other.SetVY(navy);
+    //* 원시 모멘텀 및 에너지 보존 법칙에 따라 충격량 구하는 공식: 
+    //* impulse_A = 2 * m_B * dot / (m_A + m_B) -> B가 A에게 주는 충격량
+    //* impulse_B = 2 * m_A * dot / (m_A + m_B) -> A가 B에게 주는 충격량
+    //* 작용-반작용이므로 2를 곱해줍니다.
 
-    //double vol = other.GetVolume();
-    //double va = other.GetVX();
-    //double vb = other.GetVY();
-    //double vnx = other.GetCX() - cx;
-    //double vny = other.GetCY() - cy;
+    // 충격량에 따라 속도 벡터를 업데이트
+    double new_vx = vx - u_nol_x * impulse_A;
+    double new_vy = vy - u_nol_y * impulse_A;
 
-    //// Calculate the distance between the centers of the two objects.
-    //double distance = this->distance(other);
+    // 다른 객체도 충격량에 따라 속도 벡터를 업데이트
+    double new_vx_B = vx_B + u_nol_x * impulse_B;
+    double new_vy_B = vy_B + u_nol_y * impulse_B;
 
-    //// Calculate the unit vector (ux, uy) between the centers.
-    //double ux = vnx / distance;
-    //double uy = vny / distance;
+    // 업데이트된 속도를 객체에 설정
+    vx = new_vx;
+    vy = new_vy;
+    other.SetVX(new_vx_B);
+    other.SetVY(new_vy_B);
+}
 
-    //// Calculate the relative velocities.
-    //double rel_vx = vx - va;
-    //double rel_vy = vy - vb;
+int CStar::Combination(CObject& other)
+{
+    CStar* star = dynamic_cast<CStar*>(&other);
 
-    //// Calculate the dot product of the unit vector in the direction of the collision and the relative velocities.
-    //double dot = rel_vx * ux + rel_vy * uy;
+    if (star->volume + volume > 36327)
+        return 0;
 
-    //// Calculate the collision impulse.
-    //double impulse = 2 * vol * dot / (volume + vol);
+    if (star->radius > radius)
+    { // 다른 원에 흡수
+        star->SetVolume(star->volume + volume);
+        double r = sqrt(star->volume / (5 * tan(angle / 2)));
+        star->SetRadius(r);
+        return 1;
+    }
+    else
+    {
+        SetVolume(star->volume + volume);
+        double r = sqrt(volume / (5 * tan(angle / 2)));
+        SetRadius(r);
+        return 2;
+    }
+}
 
-    //// Update the velocities of the CCircle object by considering the collision impulse.
-    //double nvx = vx - ux * impulse;
-    //double nvy = vy - uy * impulse;
+void CStar::Decomposition()
+{
+}
 
-    //// Update the velocities of the CObject by considering the opposite collision impulse.
-    //double navx = va + (ux * impulse * volume) / vol;
-    //double navy = vb + (uy * impulse * volume) / vol;
-
-    //vx = nvx;
-    //vy = nvy;
-    //other.SetVX(navx);
-    //other.SetVY(navy);
+void CStar::SetVolume(double vol)
+{
+    volume = vol;
 }
 
 /*
@@ -475,6 +609,38 @@ CRectangle::CRectangle(POINT p, int type) : CObject(p, type)
     angleVelocity = (rand() / HALF - 1) / 10;
 }
 
+void CRectangle::Update(RECT* rectView)
+{
+    // 오른쪽
+    if (cx + radius >= rectView->right)
+    {
+        vx *= -1;
+        cx = rectView->right - radius;
+    }
+    // 왼쪽
+    if (cx - radius <= rectView->left)
+    {
+        vx *= -1;
+        cx = rectView->left + radius;
+    }
+    // 위
+    if (cy - radius <= rectView->top)
+    {
+        vy *= -1;
+        cy = rectView->top + radius;
+    }
+    // 아래
+    if (cy + radius >= rectView->bottom)
+    {
+        vy *= -1;
+        cy = rectView->bottom - radius;
+    }
+
+    cx += vx;
+    cy += vy;
+    rotation += angleVelocity;
+}
+
 void CRectangle::Draw(HDC hdc)
 {
     double x = sqrt(radius * radius);
@@ -489,35 +655,10 @@ void CRectangle::Draw(HDC hdc)
     }
 
     Polygon(hdc, point, 4);
-    //Rectangle(hdc, round(cx - radius / 2), round(cy - radius / 2), round(cx + radius / 2), round(cy + radius / 2));
-}
-
-bool CRectangle::CollisionBoundary(int flag, const LONG& rect1, const LONG& rect2) const
-{
-    if (flag) // 좌, 우
-    {
-        if (cx - radius <= rect1 ||
-            cx + radius >= rect2)
-        {
-            return true;
-        }
-    }
-    else // 상, 하
-    {
-        if (cy - radius <= rect1 ||
-            cy + radius >= rect2)
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 bool CRectangle::Collision(const CObject& other) const
 {
-    bool collision = false;
-
     switch (other.GetType())
     {
     case 1: // 별과 원 충돌
@@ -525,7 +666,7 @@ bool CRectangle::Collision(const CObject& other) const
         const CCircle* circle = dynamic_cast<const CCircle*>(&other);
         if (circle)
         {
-            collision = distance(*circle) <= radius + circle->GetRadius();
+            return distance(*circle) <= radius + circle->GetRadius();
         }
     }
     break;
@@ -534,7 +675,7 @@ bool CRectangle::Collision(const CObject& other) const
         const CRectangle* rect = dynamic_cast<const CRectangle*>(&other);
         if (rect)
         {
-            collision = distance(*rect) <= radius + rect->radius;
+            return distance(*rect) <= radius + rect->radius;
         }
     }
     break;
@@ -543,7 +684,7 @@ bool CRectangle::Collision(const CObject& other) const
         const CStar* star = dynamic_cast<const CStar*>(&other);
         if (star)
         {
-            collision = distance(*star) <= radius + star->GetRadius();
+            return distance(*star) <= radius + star->GetRadius();
         }
     }
     break;
@@ -551,7 +692,7 @@ bool CRectangle::Collision(const CObject& other) const
         break;
     }
 
-    return collision;
+    return false;
 }
 
 double CRectangle::GetRadius() const
@@ -559,83 +700,85 @@ double CRectangle::GetRadius() const
     return radius;
 }
 
-void CRectangle::Update()
+void CRectangle::SetRadius(double r)
 {
-    cx += vx;
-    cy += vy;
-    rotation += angleVelocity;
-}
-
-void CRectangle::TestUpdate(RECT* rectView)
-{
+    radius = r;
 }
 
 void CRectangle::SetPosition(CObject& other)
 {
-    double va = other.GetVX();
-    double vb = other.GetVY();
-    double vnx = other.GetCX() - cx;
-    double vny = other.GetCY() - cy;
+    double vol_B = other.GetVolume();
+    double vx_B = other.GetVX();
+    double vy_B = other.GetVY();
+    double nol_x = other.GetCX() - cx;
+    double nol_y = other.GetCY() - cy;
 
-    // Calculate the distance between the centers of two objects
-    double distance = sqrt(vnx * vnx + vny * vny);
+    // 두 원의 중심의 거리
+    double d = distance(other);
 
-    // Calculate the unit vector (ux, uy) between the centers
-    double ux = vnx / distance;
-    double uy = vny / distance;
+    // 충돌 방향 벡터(두 원의 중심 사이 벡터)의 단위 벡터
+    double u_nol_x = nol_x / d;
+    double u_nol_y = nol_y / d;
 
-    // Calculate the relative velocities
-    double rel_vx = vx - va;
-    double rel_vy = vy - vb;
+    // 상대 속도 벡터
+    double rel_vx = vx - vx_B;
+    double rel_vy = vy - vy_B;
 
-    // Calculate the dot product of the unit vector in the direction of the collision and the relative velocities
-    double dot = rel_vx * ux + rel_vy * uy;
+    // 상대 속도 벡터와 중심 사이 단위 벡터 내적 (충돌 방향의 정사영 계산)
+    double dot = rel_vx * u_nol_x + rel_vy * u_nol_y;
 
-    // Update the velocities considering the direction using the dot product, but maintain the original speed
-    double nvx = vx - 2 * dot * ux;
-    double nvy = vy - 2 * dot * uy;
-    double navx = va + 2 * dot * ux;
-    double navy = vb + 2 * dot * uy;
+    // 부피를 고려한 충격량을 계산 (물체의 밀도가 동일하여 부피가 질량과 같다고 가정)
+    double impulse_A = 2 * vol_B * dot / (volume + vol_B);
+    double impulse_B = 2 * volume * dot / (volume + vol_B);
 
-    // Set the updated velocities to the CCircle object and the CObject
-    vx = nvx;
-    vy = nvy;
-    other.SetVX(navx);
-    other.SetVY(navy);
+    //* 원시 모멘텀 및 에너지 보존 법칙에 따라 충격량 구하는 공식: 
+    //* impulse_A = 2 * m_B * dot / (m_A + m_B) -> B가 A에게 주는 충격량
+    //* impulse_B = 2 * m_A * dot / (m_A + m_B) -> A가 B에게 주는 충격량
+    //* 작용-반작용이므로 2를 곱해줍니다.
 
-    //double vol = other.GetVolume();
-    //double va = other.GetVX();
-    //double vb = other.GetVY();
-    //double vnx = other.GetCX() - cx;
-    //double vny = other.GetCY() - cy;
+    // 충격량에 따라 속도 벡터를 업데이트
+    double new_vx = vx - u_nol_x * impulse_A;
+    double new_vy = vy - u_nol_y * impulse_A;
 
-    //// Calculate the distance between the centers of the two objects.
-    //double distance = this->distance(other);
+    // 다른 객체도 충격량에 따라 속도 벡터를 업데이트
+    double new_vx_B = vx_B + u_nol_x * impulse_B;
+    double new_vy_B = vy_B + u_nol_y * impulse_B;
 
-    //// Calculate the unit vector (ux, uy) between the centers.
-    //double ux = vnx / distance;
-    //double uy = vny / distance;
+    // 업데이트된 속도를 객체에 설정
+    vx = new_vx;
+    vy = new_vy;
+    other.SetVX(new_vx_B);
+    other.SetVY(new_vy_B);
+}
 
-    //// Calculate the relative velocities.
-    //double rel_vx = vx - va;
-    //double rel_vy = vy - vb;
+int CRectangle::Combination(CObject& other)
+{
+    CRectangle* rect = dynamic_cast<CRectangle*>(&other);
 
-    //// Calculate the dot product of the unit vector in the direction of the collision and the relative velocities.
-    //double dot = rel_vx * ux + rel_vy * uy;
+    if (rect->volume + volume > 10000)
+        return 0;
 
-    //// Calculate the collision impulse.
-    //double impulse = 2 * vol * dot / (volume + vol);
+    if (rect->radius > radius)
+    { // 다른 원에 흡수
+        rect->SetVolume(rect->volume + volume);
+        double r = sqrt(rect->volume);
+        rect->SetRadius(r);
+        return 1;
+    }
+    else
+    {
+        SetVolume(rect->volume + volume);
+        double r = sqrt(volume);
+        SetRadius(r);
+        return 2;
+    }
+}
 
-    //// Update the velocities of the CCircle object by considering the collision impulse.
-    //double nvx = vx - ux * impulse;
-    //double nvy = vy - uy * impulse;
+void CRectangle::Decomposition()
+{
+}
 
-    //// Update the velocities of the CObject by considering the opposite collision impulse.
-    //double navx = va + (ux * impulse * volume) / vol;
-    //double navy = vb + (uy * impulse * volume) / vol;
-
-    //vx = nvx;
-    //vy = nvy;
-    //other.SetVX(navx);
-    //other.SetVY(navy);
+void CRectangle::SetVolume(double vol)
+{
+    volume = vol;
 }

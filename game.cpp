@@ -135,60 +135,129 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static POINT ptMousePos;
     static RECT rectView;
     static bool bFlag = false;
+    enum mode { REFLECTION, COMBINATION, DECOMPOSITION };
+    static int seletedMode = REFLECTION;
     enum type { NONE, CIRCLE, RECTANGLE, STAR };
-    static int selectedMenu = NONE;
 
     switch (message)
     {
     case WM_CREATE:
         srand(time(NULL));
         GetClientRect(hWnd, &rectView);
-        SetTimer(hWnd, timer_ID_1, 10, NULL);
+        SetTimer(hWnd, timer_ID_1, 20, NULL);
         break;
     case WM_TIMER:
         if (wParam == timer_ID_1)
         {
-            if (!objs.empty())
+            switch (seletedMode)
+            {
+            case REFLECTION:
             {
                 for (auto it1 = objs.begin(); it1 != objs.end(); ++it1)
                 {
                     auto it2 = it1;
-                    ++it2;
-                    for (; it2 != objs.end(); ++it2)
+                    for (++it2; it2 != objs.end(); ++it2)
                     {
                         if ((*it1)->Collision(**it2))
                         {
                             (*it1)->SetPosition(**it2);
                             do
                             {
-                                (*it1)->Update();
-                                (*it2)->Update();
+                                (*it1)->Update(&rectView);
+                                (*it2)->Update(&rectView);
                             } while ((*it1)->Collision(**it2));
                         }
                     }
 
-                    if ((*it1)->CollisionBoundary(1, rectView.left, rectView.right))
-                    {
-                        (*it1)->SetPositionBoundary(-1, 1);
-                        /*do
-                        {
-                            (*it1)->Update();
-                        } while ((*it1)->CollisionBoundary(1, rectView.left, rectView.right));*/
-                    }
-
-                    if ((*it1)->CollisionBoundary(0, rectView.top, rectView.bottom))
-                    {
-                        (*it1)->SetPositionBoundary(1, -1);
-                        /*do
-                        {
-                            (*it1)->Update();
-                        } while ((*it1)->CollisionBoundary(0, rectView.top, rectView.bottom));*/
-                    }
-
-                    (*it1)->Update();
+                    (*it1)->Update(&rectView);
                 }
-                InvalidateRgn(hWnd, NULL, TRUE);
             }
+            break;
+            case COMBINATION:
+            {
+                auto it1 = objs.begin();
+
+                while (it1 != objs.end())
+                {
+                    bool it1Erased = false;
+                    auto it2 = it1;
+                    ++it2;
+                    while (it2 != objs.end())
+                    {
+                        if ((*it1)->Collision(**it2))
+                        {
+                            if ((*it1)->GetType() == (*it2)->GetType())
+                            {
+                                if((*it1)->Combination(**it2) == 0)
+                                {
+                                    objs.erase(it2);
+                                    it1 = objs.erase(it1);
+                                    it1Erased = true;
+                                    break;
+                                }
+                                else if ((*it1)->Combination(**it2) == 1)
+                                {
+                                    it1 = objs.erase(it1);
+                                    it1Erased = true;
+                                    break;
+                                }
+                                else if ((*it1)->Combination(**it2) == 2)
+                                {
+                                    it2 = objs.erase(it2);
+                                    continue;
+                                }
+                            }
+                            else
+                            {
+                                (*it1)->SetPosition(**it2);
+                                do
+                                {
+                                    (*it1)->Update(&rectView);
+                                    (*it2)->Update(&rectView);
+                                } while ((*it1)->Collision(**it2));
+                            }
+                        }
+                        
+                        ++it2;
+                    }
+
+                    (*it1)->Update(&rectView);
+
+                    if (!it1Erased)
+                    {
+                        ++it1;
+                    }
+                }
+            }
+            break;
+            case DECOMPOSITION:
+            {
+                for (auto it1 = objs.begin(); it1 != objs.end(); ++it1)
+                {
+                    auto it2 = it1;
+                    for (++it2; it2 != objs.end(); ++it2)
+                    {
+                        if ((*it1)->Collision(**it2))
+                        {
+                            if ((*it1)->GetType() == (*it2)->GetType())
+                                (*it1)->SetPosition(**it2);
+                            else
+                                (*it1)->SetPosition(**it2);
+                            do
+                            {
+                                (*it1)->Update(&rectView);
+                                (*it2)->Update(&rectView);
+                            } while ((*it1)->Collision(**it2));
+                        }
+                    }
+
+                    (*it1)->Update(&rectView);
+                }
+            }
+            break;
+            }
+            
+            InvalidateRgn(hWnd, NULL, TRUE);
         }
         break;
     case WM_LBUTTONDOWN:
@@ -197,7 +266,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         ptMousePos.y = HIWORD(lParam);
 
         int type = rand() % 3 + 1;
-        switch (1)
+        switch (type)
         {
         case CIRCLE:
             objs.push_back(new CCircle(ptMousePos, CIRCLE));
@@ -215,17 +284,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         InvalidateRgn(hWnd, NULL, TRUE);
     }
     break;
+    case WM_KEYDOWN:
+    {
+        if (wParam == '1')
+        {
+            seletedMode = REFLECTION;
+        }
+        else if (wParam == '2')
+        {
+            seletedMode = COMBINATION;
+        }
+        else if (wParam == '3')
+        {
+            seletedMode = DECOMPOSITION;
+        }
+    }
+    break;
     case WM_PAINT:
     {
         hdc = BeginPaint(hWnd, &ps);
         // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
 
-        if (!objs.empty())
+        for (CObject* obj : objs)
         {
-            for (CObject* obj : objs)
-            {
-                obj->Draw(hdc);
-            }
+            obj->Draw(hdc);
         }
 
         EndPaint(hWnd, &ps);
@@ -253,14 +335,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         KillTimer(hWnd, timer_ID_1);
         PostQuitMessage(0);
-
-        if (!objs.empty())
-        {
-            for (CObject* obj : objs)
-            {
-                delete obj;
-            }
-        }
 
         break;
     default:
