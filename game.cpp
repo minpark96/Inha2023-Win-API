@@ -232,30 +232,148 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             break;
             case DECOMPOSITION:
             {
-                for (auto it1 = objs.begin(); it1 != objs.end(); ++it1)
+                /*
+                0 : it1이 사라짐 -> it2는 직진
+                1 : 원 it1이 분열 -> it2는 반사
+                2 : 사각형 it1이 분열 -> it2는 반사
+                3 : 별 it1이 분열 -> it2는 반사
+                4 : it2이 사라짐 -> it1는 직진
+                5 : 원 it2이 분열 -> it1는 반사
+                6 : 사각형 it2이 분열 -> it1는 반사
+                7 : 별 it2이 분열 -> it1는 반사
+                */
+
+                auto it1 = objs.begin();
+
+                while (it1 != objs.end())
                 {
+                    bool it1Erased = false;
                     auto it2 = it1;
-                    for (++it2; it2 != objs.end(); ++it2)
+                    ++it2;
+                    while (it2 != objs.end())
                     {
                         if ((*it1)->Collision(**it2))
                         {
-                            if ((*it1)->GetType() == (*it2)->GetType())
-                                (*it1)->SetPosition(**it2);
-                            else
-                                (*it1)->SetPosition(**it2);
-                            do
+                            if ((*it1)->GetType()  == (*it2)->GetType())
                             {
-                                (*it1)->Update(&rectView);
-                                (*it2)->Update(&rectView);
-                            } while ((*it1)->Collision(**it2));
+                                (*it1)->SetPosition(**it2);
+                                do
+                                {
+                                    (*it1)->Update(&rectView);
+                                    (*it2)->Update(&rectView);
+                                } while ((*it1)->Collision(**it2));
+                            }
+                            else
+                            {
+                                if ((*it1)->Decomposition(**it2) == 0)
+                                {
+                                    it1 = objs.erase(it1);
+                                    it1Erased = true;
+                                    break;
+                                }
+                                else if ((*it1)->Decomposition(**it2) == 1)
+                                {
+                                    (*it1)->SetPosition(**it2);
+                                    do
+                                    {
+                                        (*it1)->Update(&rectView);
+                                        (*it2)->Update(&rectView);
+                                    } while ((*it1)->Collision(**it2));
+                                    // it1 3개 생성
+                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                }
+                                else if ((*it1)->Decomposition(**it2) == 2)
+                                {
+                                    (*it1)->SetPosition(**it2);
+                                    do
+                                    {
+                                        (*it1)->Update(&rectView);
+                                        (*it2)->Update(&rectView);
+                                    } while ((*it1)->Collision(**it2));
+                                    // it1 3개 생성
+                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    break;
+                                }
+                                else if ((*it1)->Decomposition(**it2) == 3)
+                                {
+                                    (*it1)->SetPosition(**it2);
+                                    do
+                                    {
+                                        (*it1)->Update(&rectView);
+                                        (*it2)->Update(&rectView);
+                                    } while ((*it1)->Collision(**it2));
+                                    // it1 3개 생성
+                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    break;
+                                }
+                                else if ((*it1)->Decomposition(**it2) == 4)
+                                {   
+                                    it2 = objs.erase(it2);
+                                    continue;
+                                }
+                                else if ((*it1)->Decomposition(**it2) == 5)
+                                {
+                                    (*it1)->SetPosition(**it2);
+                                    do
+                                    {
+                                        (*it1)->Update(&rectView);
+                                        (*it2)->Update(&rectView);
+                                    } while ((*it1)->Collision(**it2));
+                                    // it2 3개 생성
+                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                    break;
+                                }
+                                else if ((*it1)->Decomposition(**it2) == 6)
+                                {
+                                    (*it1)->SetPosition(**it2);
+                                    do
+                                    {
+                                        (*it1)->Update(&rectView);
+                                        (*it2)->Update(&rectView);
+                                    } while ((*it1)->Collision(**it2));
+                                    // it2 3개 생성
+                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    break;
+                                }
+                                else if ((*it1)->Decomposition(**it2) == 7)
+                                {
+                                    (*it1)->SetPosition(**it2);
+                                    do
+                                    {
+                                        (*it1)->Update(&rectView);
+                                        (*it2)->Update(&rectView);
+                                    } while ((*it1)->Collision(**it2));
+                                    // it2 3개 생성
+                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    break;
+                                }
+                            }
                         }
+
+                        ++it2;
                     }
 
                     (*it1)->Update(&rectView);
+
+                    if (!it1Erased)
+                    {
+                        ++it1;
+                    }
                 }
             }
             break;
-            }
             
             InvalidateRgn(hWnd, NULL, TRUE);
         }

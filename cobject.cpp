@@ -78,7 +78,7 @@ void CObject::SetVY(double v)
 
 CCircle::CCircle(POINT p, int type) : CObject(p, type)
 {
-    radius = rand() % 50 + 10;
+    radius = rand() % 20 + 10;
     volume = PI * radius * radius;
 }
 
@@ -393,8 +393,41 @@ int CCircle::Combination(CObject& other)
     }
 }
 
-void CCircle::Decomposition()
+int CCircle::Decomposition(CObject& other)
 {
+    switch (other.GetType())
+    {
+    case 2: // 원과 사각형 충돌 -> 사각형 분열
+    {
+        CRectangle* rect = dynamic_cast<CRectangle*>(&other);
+        if (rect)
+        {
+            if (rect->GetVolume() < 100)
+                return 4;
+            else
+            {
+                rect->SetVolume(rect->GetVolume() / 4);
+                double r = sqrt(rect->GetVolume());
+                rect->SetRadius(r);
+                return 6;
+            }
+        }
+    }
+    break;
+    case 3: // 원과 별 충돌 -> 원 분열
+    {
+        if (volume < 314)
+            return 0;
+        else
+        {
+            SetVolume(volume / 4);
+            double r = sqrt(volume / PI);
+            SetRadius(r);
+            return 1;
+        }
+    }
+    break;
+    }
 }
 
 void CCircle::SetVolume(double vol)
@@ -410,7 +443,7 @@ void CCircle::SetVolume(double vol)
 
 CStar::CStar(POINT p, int type) : CObject(p, type)
 {
-    radius = rand() % 90 + 10;
+    radius = rand() % 20 + 10;
     angle = DegreeToRadian(360.0 / 5);
     volume = radius * tan(angle / 2) * radius * 5;
     rotation = rand() % 72 + 1;
@@ -585,8 +618,38 @@ int CStar::Combination(CObject& other)
     }
 }
 
-void CStar::Decomposition()
+int CStar::Decomposition(CObject& other)
 {
+    switch (other.GetType())
+    {
+    case 2: // 별과 사각형 충돌 -> 별 분열
+    {
+        if (volume < 363)
+            return 0;
+        else
+        {
+            SetVolume(volume / 4);
+            double r = sqrt(volume / (5 * tan(angle / 2)));
+            SetRadius(r);
+            return 3;
+        }
+    }
+    break;
+    case 1: // 별과 원 충돌 -> 원 분열
+    {
+        CCircle* circle = dynamic_cast<CCircle*>(&other);
+        if (circle->GetVolume() < 314)
+            return 4;
+        else
+        {
+            SetVolume(circle->GetVolume() / 4);
+            double r = sqrt(circle->GetVolume() / PI);
+            circle->SetRadius(r);
+            return 5;
+        }
+    }
+    break;
+    }
 }
 
 void CStar::SetVolume(double vol)
@@ -602,7 +665,7 @@ void CStar::SetVolume(double vol)
 
 CRectangle::CRectangle(POINT p, int type) : CObject(p, type)
 {
-    radius = rand() % 90 + 10;
+    radius = rand() % 20 + 10;
     angle = DegreeToRadian(360.0 / 4);
     volume = radius * radius;
     rotation = rand() % 90 + 1;
@@ -774,8 +837,38 @@ int CRectangle::Combination(CObject& other)
     }
 }
 
-void CRectangle::Decomposition()
+int CRectangle::Decomposition(CObject& other)
 {
+    switch (other.GetType())
+    {
+    case 1: // 사각형과 원 충돌 -> 사각형 분열
+    {
+        if (volume < 100)
+            return 0;
+        else
+        {
+            SetVolume(volume / 4);
+            double r = sqrt(volume);
+            SetRadius(r);
+            return 2;
+        }
+    }
+    break;
+    case 3: // 사각형과 별 충돌 -> 별 분열
+    {
+        CStar* star = dynamic_cast<CStar*>(&other);
+        if (star->GetVolume() < 363)
+            return 4;
+        else
+        {
+            SetVolume(volume / 4);
+            double r = sqrt(star->GetVolume() / (5 * tan(angle / 2)));
+            star->SetRadius(r);
+            return 7;
+        }
+    }
+    break;
+    }
 }
 
 void CRectangle::SetVolume(double vol)

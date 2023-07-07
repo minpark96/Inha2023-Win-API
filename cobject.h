@@ -23,7 +23,7 @@ public:
 	virtual void Draw(HDC hdc) = 0;
 	virtual bool Collision(const CObject& other) const = 0;
 	virtual int Combination(CObject& other) = 0;
-	virtual void Decomposition() = 0;
+	virtual int Decomposition(CObject& other) = 0;
 	virtual void SetPosition(CObject& other) = 0;
 	virtual void SetVolume(double vol) = 0;
 
@@ -58,7 +58,7 @@ public:
 	void SetRadius(double r);
 	void SetPosition(CObject& other) override;
 	int Combination(CObject& other) override;
-	void Decomposition() override;
+	int Decomposition(CObject& other) override;
 	void SetVolume(double vol) override;
 };
 
@@ -78,7 +78,7 @@ public:
 	void SetRadius(double r);
 	void SetPosition(CObject& other) override;
 	int Combination(CObject& other) override;
-	void Decomposition() override;
+	int Decomposition(CObject& other) override;
 	void SetVolume(double vol) override;
 };
 
@@ -98,6 +98,6 @@ public:
 	void SetRadius(double r);
 	void SetPosition(CObject& other) override;
 	int Combination(CObject& other) override;
-	void Decomposition() override;
+	int Decomposition(CObject& other) override;
 	void SetVolume(double vol) override;
 };
