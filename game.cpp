@@ -254,16 +254,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     {
                         if ((*it1)->Collision(**it2))
                         {
-                            if ((*it1)->GetType()  == (*it2)->GetType())
+                            (*it1)->SetPosition(**it2);
+                            do
                             {
-                                (*it1)->SetPosition(**it2);
-                                do
-                                {
-                                    (*it1)->Update(&rectView);
-                                    (*it2)->Update(&rectView);
-                                } while ((*it1)->Collision(**it2));
-                            }
-                            else
+                                (*it1)->Update(&rectView);
+                                (*it2)->Update(&rectView);
+                            } while ((*it1)->Collision(**it2));
+
+                            if ((*it1)->GetType()  != (*it2)->GetType())
                             {
                                 if ((*it1)->Decomposition(**it2) == 0)
                                 {
@@ -273,12 +271,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 1)
                                 {
-                                    (*it1)->SetPosition(**it2);
-                                    do
-                                    {
-                                        (*it1)->Update(&rectView);
-                                        (*it2)->Update(&rectView);
-                                    } while ((*it1)->Collision(**it2));
                                     // it1 3俺 积己
                                     objs.push_back(new CCircle(ptMousePos, CIRCLE));
                                     objs.push_back(new CCircle(ptMousePos, CIRCLE));
@@ -286,12 +278,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 2)
                                 {
-                                    (*it1)->SetPosition(**it2);
-                                    do
-                                    {
-                                        (*it1)->Update(&rectView);
-                                        (*it2)->Update(&rectView);
-                                    } while ((*it1)->Collision(**it2));
                                     // it1 3俺 积己
                                     objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
                                     objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
@@ -300,12 +286,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 3)
                                 {
-                                    (*it1)->SetPosition(**it2);
-                                    do
-                                    {
-                                        (*it1)->Update(&rectView);
-                                        (*it2)->Update(&rectView);
-                                    } while ((*it1)->Collision(**it2));
                                     // it1 3俺 积己
                                     objs.push_back(new CStar(ptMousePos, STAR));
                                     objs.push_back(new CStar(ptMousePos, STAR));
@@ -319,12 +299,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 5)
                                 {
-                                    (*it1)->SetPosition(**it2);
-                                    do
-                                    {
-                                        (*it1)->Update(&rectView);
-                                        (*it2)->Update(&rectView);
-                                    } while ((*it1)->Collision(**it2));
                                     // it2 3俺 积己
                                     objs.push_back(new CCircle(ptMousePos, CIRCLE));
                                     objs.push_back(new CCircle(ptMousePos, CIRCLE));
@@ -333,12 +307,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 6)
                                 {
-                                    (*it1)->SetPosition(**it2);
-                                    do
-                                    {
-                                        (*it1)->Update(&rectView);
-                                        (*it2)->Update(&rectView);
-                                    } while ((*it1)->Collision(**it2));
                                     // it2 3俺 积己
                                     objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
                                     objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
@@ -347,12 +315,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 7)
                                 {
-                                    (*it1)->SetPosition(**it2);
-                                    do
-                                    {
-                                        (*it1)->Update(&rectView);
-                                        (*it2)->Update(&rectView);
-                                    } while ((*it1)->Collision(**it2));
                                     // it2 3俺 积己
                                     objs.push_back(new CStar(ptMousePos, STAR));
                                     objs.push_back(new CStar(ptMousePos, STAR));
