@@ -46,8 +46,15 @@ VOID CALLBACK AniProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
 BOOL CALLBACK Dialog_Test1_Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
+// << :
 
+// >> : GDI+
 
+ULONG_PTR g_GdiToken;
+
+void Gdi_Init();
+void Gdi_Draw(HDC hdc);
+void Gdi_End();
 
 // << :
 
@@ -80,9 +87,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     LoadStringW(hInstance, IDC_WINAPIPROJ, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
+    Gdi_Init();
+
     // 애플리케이션 초기화를 수행합니다:
     if (!InitInstance (hInstance, nCmdShow))
     {
+        Gdi_End();
         return FALSE;
     }
 
@@ -115,6 +125,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             }
         }
     }
+
+    Gdi_End();
 
     return (int) msg.wParam;
 }
@@ -569,6 +581,8 @@ void DrawBitmapDoubleBuffering(HWND hWnd, HDC hdc)
     }
     // >> : hdc에 그려주기
 
+    Gdi_Draw(hMemDC);
+
     TransparentBlt(hdc, 0, 0, rectView.right, rectView.bottom,
         hMemDC, 0, 0, rectView.right, rectView.bottom,
         RGB(255, 0, 255));
@@ -586,17 +600,61 @@ VOID CALLBACK AniProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime)
 
 BOOL CALLBACK Dialog_Test1_Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
+    static int Check[3], Radio;
+    TCHAR hobby[][30] = { _T("독서"), _T("음악감상"), _T("게임") };
+    TCHAR sex[][30] = { _T("여성"), _T("남성") };
+    TCHAR output[200];
+
     switch (iMsg)
     {
     case WM_INITDIALOG:
     {
         HWND hBtn = GetDlgItem(hDlg, IDC_PAUSE);
         EnableWindow(hBtn, FALSE);
+
+        CheckRadioButton(hDlg, IDC_RADIO_FEMALE, IDC_RADIO_MALE, IDC_RADIO_FEMALE);
     }
         return 1;
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
+        case IDC_CHECK_READING:
+            Check[0] = 1 - Check[0];
+            break;
+        case IDC_CHECK_MUSIC:
+            Check[1] = 1 - Check[1];
+            break;
+        case IDC_CHECK_GAME:
+            Check[2] = 1 - Check[2];
+            break;
+        case IDC_RADIO_FEMALE:
+            Radio = 0;
+            break;
+        case IDC_RADIO_MALE:
+            Radio = 1;
+            break;
+        case IDC_BUTTON_OUTPUT:
+            _stprintf_s(output, _T("선택한 취미는 %s %s %s 입니다.\r\n")
+                _T("선택한 성별은 %s입니다."), 
+                Check[0] ? hobby[0] : _T(""), 
+                Check[1] ? hobby[1] : _T(""),
+                Check[2] ? hobby[2] : _T(""), 
+                sex[Radio]);
+            SetDlgItemText(hDlg, IDC_EDIT_OUTPUT, output);
+            break;
+        case IDC_BUTTON_COPY:
+        {
+            TCHAR str[100];
+            GetDlgItemText(hDlg, IDC_EDIT_INPUT, str, 100);
+            SetDlgItemText(hDlg, IDC_EDIT_COPY, str);
+        }
+        break;
+        case IDC_BUTTON_CLEAR:
+        {
+            SetDlgItemText(hDlg, IDC_EDIT_INPUT, _T(""));
+            SetDlgItemText(hDlg, IDC_EDIT_COPY, _T(""));
+        }
+        break;
         case IDC_START:
         {
             HDC hdc = GetDC(hDlg);
@@ -642,4 +700,122 @@ BOOL CALLBACK Dialog_Test1_Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lPar
     }
 
     return 0;
+}
+
+void Gdi_Init()
+{
+    GdiplusStartupInput gpsi;
+    GdiplusStartup(&g_GdiToken, &gpsi, NULL);
+}
+
+void Gdi_Draw(HDC hdc)
+{
+    Graphics graphics(hdc);
+
+    // : text
+    SolidBrush brush(Color(255, 255, 0, 0));
+    FontFamily fontFamily(L"Times New Roman");
+    Font font(&fontFamily, 24, FontStyleRegular, UnitPixel);
+    PointF pointF(10.0f, 20.0f);
+    graphics.DrawString(L"Hello GDI+!!", -1, &font, pointF, &brush);
+
+    // : line
+    Pen pen(Color(128, 255, 0, 255));
+    graphics.DrawLine(&pen, 0, 0, 200, 100);
+
+    // : image
+    Image img((WCHAR*)L"images/sigong.png");
+    int w = img.GetWidth();
+    int h = img.GetHeight();
+    graphics.DrawImage(&img, 300, 100, w, h);
+
+    // : ani
+    Image img2((WCHAR*)L"images/zero_run.png");
+    w = img2.GetWidth() / SPRITE_FRAME_COUNT_X;
+    h = img2.GetHeight() / SPRITE_FRAME_COUNT_Y;
+    int xStart = curframe * w;
+    int yStart = 0;
+
+    ImageAttributes imgAttr0;
+    imgAttr0.SetColorKey(Color(245, 0, 245), Color(255, 10, 255));
+    graphics.DrawImage(&img2, Rect(400, 100, w, h), xStart, yStart, w, h, UnitPixel, &imgAttr0);
+
+
+
+    // >> : rotation
+    Image* pImg = nullptr;
+    pImg = Image::FromFile((WCHAR*)L"images/sigong.png");
+    int xPos = 400;
+    int yPos = 200;
+    if (pImg)
+    {
+        w = pImg->GetWidth();
+        h = pImg->GetHeight();
+
+        Gdiplus::Matrix mat;
+        static int rot = 0;
+        mat.RotateAt((rot % 360),
+            Gdiplus::PointF(xPos + (float)(w / 2), yPos+(float)(h / 2))
+            );
+        graphics.SetTransform(&mat);
+        graphics.DrawImage(pImg, xPos, yPos, w, h);
+        rot += 10;
+
+        mat.Reset();
+        graphics.SetTransform(&mat);
+    }
+
+    ImageAttributes imgAttr;
+    imgAttr.SetColorKey(Color(240, 0, 240), Color(255, 10, 255));
+    xPos = 500;
+    graphics.DrawImage(pImg, Rect(xPos, yPos, w, h),
+        0, 0, w, h, UnitPixel, & imgAttr);
+
+    if (pImg)
+    {
+        REAL transparency = 0.5f;
+        ColorMatrix colorMatrix =
+        {
+            1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, transparency, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+        };
+        imgAttr.SetColorMatrix(&colorMatrix);
+        xPos = 600;
+        graphics.DrawImage(pImg, Rect(xPos, yPos, w, h),
+            0, 0, w, h, UnitPixel, &imgAttr);
+
+        ColorMatrix grayMatrix =
+        {
+            0.3f, 0.3f, 0.3f, 0.0f, 0.0f,
+            0.6f, 0.6f, 0.6f, 0.0f, 0.0f,
+            0.1f, 0.1f, 0.1f, 0.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+        };
+        imgAttr.SetColorMatrix(&grayMatrix);
+        xPos = 700;
+        graphics.DrawImage(pImg, Rect(xPos, yPos, w, h),
+            0, 0, w, h, UnitPixel, &imgAttr);
+
+        xPos = 800;
+        pImg->RotateFlip(RotateNoneFlipX);
+        graphics.DrawImage(pImg, Rect(xPos, yPos, w, h),
+            0, 0, w, h, UnitPixel, &imgAttr);
+
+        delete pImg;
+    }
+
+
+
+    // >> : alpha rect
+    brush.SetColor(Color(128, 255, 0, 0));
+    graphics.FillRectangle(&brush, 100, 100, 200, 300);
+}
+
+void Gdi_End()
+{
+    GdiplusShutdown(g_GdiToken);
 }

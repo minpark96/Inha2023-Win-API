@@ -51,6 +51,7 @@ private:
 	double radius;
 public:
 	CCircle(POINT p, int type);
+	CCircle(POINT p, int type, double radius, double vx, double vy);
 	void Update(RECT* rectView);
 	void Draw(HDC hdc) override;
 	bool Collision(const CObject& other) const override;
@@ -71,6 +72,7 @@ private:
 	double angleVelocity;
 public:
 	CStar(POINT p, int type);
+	CStar(POINT p, int type, double radius, double vx, double vy);
 	void Update(RECT* rectView);
 	void Draw(HDC hdc) override;
 	bool Collision(const CObject& other) const override;
@@ -91,6 +93,7 @@ private:
 	double angleVelocity;
 public:
 	CRectangle(POINT p, int type);
+	CRectangle(POINT p, int type, double radius, double vx, double vy);
 	void Update(RECT* rectView);
 	void Draw(HDC hdc) override;
 	bool Collision(const CObject& other) const override;

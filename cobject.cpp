@@ -82,6 +82,14 @@ CCircle::CCircle(POINT p, int type) : CObject(p, type)
     volume = PI * radius * radius;
 }
 
+CCircle::CCircle(POINT p, int type, double radius, double vx, double vy) : CObject(p, type)
+{
+    this->radius = radius;
+    volume = PI * radius * radius;
+    this->vx = vx;
+    this->vy = vy;
+}
+
 void CCircle::Update(RECT* rectView)
 {
     // ¿À¸¥ÂÊ
@@ -406,8 +414,9 @@ int CCircle::Decomposition(CObject& other)
                 return 4;
             else
             {
-                rect->SetVolume(rect->GetVolume() / 4);
-                double r = sqrt(rect->GetVolume());
+                double vol = rect->GetVolume() / 4;
+                rect->SetVolume(vol);
+                double r = sqrt(vol);
                 rect->SetRadius(r);
                 return 6;
             }
@@ -420,8 +429,9 @@ int CCircle::Decomposition(CObject& other)
             return 0;
         else
         {
-            SetVolume(volume / 4);
-            double r = sqrt(volume / PI);
+            double vol = volume / 4;
+            SetVolume(vol);
+            double r = sqrt(vol / PI);
             SetRadius(r);
             return 1;
         }
@@ -448,6 +458,17 @@ CStar::CStar(POINT p, int type) : CObject(p, type)
     volume = radius * tan(angle / 2) * radius * 5;
     rotation = rand() % 72 + 1;
     angleVelocity = (rand() / HALF - 1) / 10;
+}
+
+CStar::CStar(POINT p, int type, double radius, double vx, double vy) : CObject(p, type)
+{
+    this->radius = radius;
+    angle = DegreeToRadian(360.0 / 5);
+    volume = radius * tan(angle / 2) * radius * 5;
+    rotation = rand() % 72 + 1;
+    angleVelocity = (rand() / HALF - 1) / 10;
+    this->vx = vx;
+    this->vy = vy;
 }
 
 void CStar::Update(RECT* rectView)
@@ -628,8 +649,9 @@ int CStar::Decomposition(CObject& other)
             return 0;
         else
         {
-            SetVolume(volume / 4);
-            double r = sqrt(volume / (5 * tan(angle / 2)));
+            double vol = volume / 4;
+            SetVolume(vol);
+            double r = sqrt(vol / (5 * tan(angle / 2)));
             SetRadius(r);
             return 3;
         }
@@ -642,8 +664,9 @@ int CStar::Decomposition(CObject& other)
             return 4;
         else
         {
-            SetVolume(circle->GetVolume() / 4);
-            double r = sqrt(circle->GetVolume() / PI);
+            double vol = circle->GetVolume() / 4;
+            circle->SetVolume(vol);
+            double r = sqrt(vol / PI);
             circle->SetRadius(r);
             return 5;
         }
@@ -670,6 +693,17 @@ CRectangle::CRectangle(POINT p, int type) : CObject(p, type)
     volume = radius * radius;
     rotation = rand() % 90 + 1;
     angleVelocity = (rand() / HALF - 1) / 10;
+}
+
+CRectangle::CRectangle(POINT p, int type, double radius, double vx, double vy) : CObject(p, type)
+{
+    this->radius = radius;
+    angle = DegreeToRadian(360.0 / 4);
+    volume = radius * radius;
+    rotation = rand() % 90 + 1;
+    angleVelocity = (rand() / HALF - 1) / 10;
+    this->vx = vx;
+    this->vy = vy;
 }
 
 void CRectangle::Update(RECT* rectView)
@@ -847,8 +881,9 @@ int CRectangle::Decomposition(CObject& other)
             return 0;
         else
         {
-            SetVolume(volume / 4);
-            double r = sqrt(volume);
+            double vol = volume / 4;
+            SetVolume(vol);
+            double r = sqrt(vol);
             SetRadius(r);
             return 2;
         }
@@ -861,8 +896,9 @@ int CRectangle::Decomposition(CObject& other)
             return 4;
         else
         {
-            SetVolume(volume / 4);
-            double r = sqrt(star->GetVolume() / (5 * tan(angle / 2)));
+            double vol = star->GetVolume() / 4;
+            star->SetVolume(vol);
+            double r = sqrt(vol / (5 * tan(angle / 2)));
             star->SetRadius(r);
             return 7;
         }

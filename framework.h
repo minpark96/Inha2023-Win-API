@@ -20,4 +20,11 @@
 #include <iterator>
 #include <ctime>
 // 사용자 헤더 파일
-#include "cobject.h"
+//#include "cobject.h"
+#include "ccircle.h"
+#include "crectangle.h"
+// GDI+
+#include <objidl.h>
+#include <gdiplus.h>
+#pragma comment(lib, "Gdiplus.lib")
+using namespace Gdiplus;

@@ -30,6 +30,12 @@
     <ClInclude Include="cobject.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="ccircle.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="crectangle.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WinAPI_Proj.cpp">
@@ -39,6 +45,15 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="game.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ccircle.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="crectangle.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="brick.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

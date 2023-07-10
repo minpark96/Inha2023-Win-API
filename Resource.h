@@ -19,6 +19,17 @@
 #define IDC_TEXT                        1028
 #define IDC_START                       1029
 #define IDC_PAUSE                       1030
+#define IDC_EDIT_INPUT                  1031
+#define IDC_BUTTON_COPY                 1032
+#define IDC_BUTTON_CLEAR                1033
+#define IDC_EDIT_COPY                   1034
+#define IDC_CHECK_READING               1035
+#define IDC_CHECK_MUSIC                 1036
+#define IDC_CHECK_GAME                  1037
+#define IDC_RADIO_FEMALE                1038
+#define IDC_RADIO_MALE                  1039
+#define IDC_EDIT_OUTPUT                 1040
+#define IDC_BUTTON_OUTPUT               1041
 #define ID_DRAW_CIRCLE                  32778
 #define ID_DRAW_RECT                    32781
 #define ID_DRAW_STAR                    32782
@@ -36,7 +47,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32794
-#define _APS_NEXT_CONTROL_VALUE         1031
+#define _APS_NEXT_CONTROL_VALUE         1042
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif

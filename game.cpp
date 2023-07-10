@@ -188,7 +188,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         {
                             if ((*it1)->GetType() == (*it2)->GetType())
                             {
-                                if((*it1)->Combination(**it2) == 0)
+                                if ((*it1)->Combination(**it2) == 0)
                                 {
                                     objs.erase(it2);
                                     it1 = objs.erase(it1);
@@ -217,7 +217,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 } while ((*it1)->Collision(**it2));
                             }
                         }
-                        
+
                         ++it2;
                     }
 
@@ -261,7 +261,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 (*it2)->Update(&rectView);
                             } while ((*it1)->Collision(**it2));
 
-                            if ((*it1)->GetType()  != (*it2)->GetType())
+                            if ((*it1)->GetType() != (*it2)->GetType())
                             {
                                 if ((*it1)->Decomposition(**it2) == 0)
                                 {
@@ -272,53 +272,107 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                                 else if ((*it1)->Decomposition(**it2) == 1)
                                 {
                                     // it1 3俺 积己
-                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
-                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
-                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                    CCircle* circle = dynamic_cast<CCircle*>(*it1);
+                                    double r = circle->GetRadius();
+                                    double cx = circle->GetCX();
+                                    double cy = circle->GetCY();
+                                    double vx = circle->GetVX();
+                                    double vy = circle->GetVY();
+                                    POINT p = { cx + r, cy };
+                                    objs.push_back(new CCircle(p, CIRCLE, r, -vx, vy));
+                                    p.y = cy + r;
+                                    objs.push_back(new CCircle(p, CIRCLE, r, vx, -vy));
+                                    p.x = cx;
+                                    objs.push_back(new CCircle(p, CIRCLE, r, -vx, -vy));
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 2)
                                 {
                                     // it1 3俺 积己
-                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
-                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
-                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    CRectangle* rect = dynamic_cast<CRectangle*>(*it1);
+                                    double r = rect->GetRadius();
+                                    double cx = rect->GetCX();
+                                    double cy = rect->GetCY();
+                                    double vx = rect->GetVX();
+                                    double vy = rect->GetVY();
+                                    POINT p = { cx + r, cy };
+                                    objs.push_back(new CRectangle(p, RECTANGLE, r, -vx, vy));
+                                    p.y = cy + r;
+                                    objs.push_back(new CRectangle(p, RECTANGLE, r, vx, -vy));
+                                    p.x = cx;
+                                    objs.push_back(new CRectangle(p, RECTANGLE, r, -vx, -vy));
                                     break;
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 3)
                                 {
                                     // it1 3俺 积己
-                                    objs.push_back(new CStar(ptMousePos, STAR));
-                                    objs.push_back(new CStar(ptMousePos, STAR));
-                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    CStar* star = dynamic_cast<CStar*>(*it1);
+                                    double r = star->GetRadius();
+                                    double cx = star->GetCX();
+                                    double cy = star->GetCY();
+                                    double vx = star->GetVX();
+                                    double vy = star->GetVY();
+                                    POINT p = { cx + r, cy };
+                                    objs.push_back(new CStar(p, STAR, r, -vx, vy));
+                                    p.y = cy + r;
+                                    objs.push_back(new CStar(p, STAR, r, vx, -vy));
+                                    p.x = cx;
+                                    objs.push_back(new CStar(p, STAR, r, -vx, -vy));
                                     break;
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 4)
-                                {   
+                                {
                                     it2 = objs.erase(it2);
                                     continue;
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 5)
                                 {
                                     // it2 3俺 积己
-                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
-                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
-                                    objs.push_back(new CCircle(ptMousePos, CIRCLE));
+                                    CCircle* circle = dynamic_cast<CCircle*>(*it2);
+                                    double r = circle->GetRadius();
+                                    double cx = circle->GetCX();
+                                    double cy = circle->GetCY();
+                                    double vx = circle->GetVX();
+                                    double vy = circle->GetVY();
+                                    POINT p = { cx + r, cy };
+                                    objs.push_back(new CCircle(p, CIRCLE, r, -vx, vy));
+                                    p.y = cy + r;
+                                    objs.push_back(new CCircle(p, CIRCLE, r, vx, -vy));
+                                    p.x = cx;
+                                    objs.push_back(new CCircle(p, CIRCLE, r, -vx, -vy));
                                     break;
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 6)
                                 {
                                     // it2 3俺 积己
-                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
-                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
-                                    objs.push_back(new CRectangle(ptMousePos, RECTANGLE));
+                                    CRectangle* rect = dynamic_cast<CRectangle*>(*it2);
+                                    double r = rect->GetRadius();
+                                    double cx = rect->GetCX();
+                                    double cy = rect->GetCY();
+                                    double vx = rect->GetVX();
+                                    double vy = rect->GetVY();
+                                    POINT p = { cx + r, cy };
+                                    objs.push_back(new CRectangle(p, RECTANGLE, r, -vx, vy));
+                                    p.y = cy + r;
+                                    objs.push_back(new CRectangle(p, RECTANGLE, r, vx, -vy));
+                                    p.x = cx;
+                                    objs.push_back(new CRectangle(p, RECTANGLE, r, -vx, -vy));
                                     break;
                                 }
                                 else if ((*it1)->Decomposition(**it2) == 7)
                                 {
                                     // it2 3俺 积己
-                                    objs.push_back(new CStar(ptMousePos, STAR));
-                                    objs.push_back(new CStar(ptMousePos, STAR));
-                                    objs.push_back(new CStar(ptMousePos, STAR));
+                                    CStar* star = dynamic_cast<CStar*>(*it2);
+                                    double r = star->GetRadius();
+                                    double cx = star->GetCX();
+                                    double cy = star->GetCY();
+                                    double vx = star->GetVX();
+                                    double vy = star->GetVY();
+                                    POINT p = { cx + r, cy };
+                                    objs.push_back(new CStar(p, STAR, r, -vx, vy));
+                                    p.y = cy + r;
+                                    objs.push_back(new CStar(p, STAR, r, vx, -vy));
+                                    p.x = cx;
+                                    objs.push_back(new CStar(p, STAR, r, -vx, -vy));
                                     break;
                                 }
                             }
@@ -336,7 +390,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
             }
             break;
-            
+            }
+
             InvalidateRgn(hWnd, NULL, TRUE);
         }
         break;
