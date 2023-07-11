@@ -27,45 +27,7 @@ CRectangle::CRectangle(double cx, double cy, int hp)
     bottom = this->cy + height / 2;
     this->hp = hp;
     vx = 0;
-
-    switch (hp)
-    {
-    case 1:
-    {
-        color = RGB(255, 0, 0);
-    }
-        break;
-    case 2:
-    {
-        color = RGB(255, 192, 203);
-    }
-        break;
-    case 3:
-    {
-        color = RGB(255, 165, 0);
-    }
-        break;
-    case 4:
-    {
-        color = RGB(144, 238, 144);
-    }
-        break;
-    case 5:
-    {
-        color = RGB(0, 0, 255);
-    }
-        break;
-    case 6:
-    {
-        color = RGB(128, 128, 128);
-    }
-        break;
-    default:
-    {
-        color = RGB(255, 255, 255);
-    }
-        break;
-    }
+    SetColor(hp);
 }
 
 CRectangle::~CRectangle()
@@ -111,7 +73,7 @@ void CRectangle::Draw(HDC hdc)
     Polygon(hdc, point, 4);
 }
 
-bool CRectangle::Collision(const CCircle& cir) const
+bool CRectangle::Collision(const CCircle& cir)
 {
     double clamped_x = max(left, min(cir.GetCX(), right));
     double clamped_y = max(top, min(cir.GetCY(), bottom));
@@ -120,7 +82,8 @@ bool CRectangle::Collision(const CCircle& cir) const
 
     if (d <= cir.GetRadius())
     {
-        hp -= 1;
+        hp--;
+        SetColor(hp);
         return true;
     }
         
@@ -141,4 +104,46 @@ double CRectangle::GetHeight() const
 COLORREF CRectangle::GetColor() const
 {
     return color;
+}
+
+void CRectangle::SetColor(int hp)
+{
+    switch (hp)
+    {
+    case 1:
+    {
+        color = RGB(255, 0, 0);
+    }
+    break;
+    case 2:
+    {
+        color = RGB(255, 192, 203);
+    }
+    break;
+    case 3:
+    {
+        color = RGB(255, 165, 0);
+    }
+    break;
+    case 4:
+    {
+        color = RGB(144, 238, 144);
+    }
+    break;
+    case 5:
+    {
+        color = RGB(0, 0, 255);
+    }
+    break;
+    case 6:
+    {
+        color = RGB(128, 128, 128);
+    }
+    break;
+    default:
+    {
+        color = RGB(255, 255, 255);
+    }
+    break;
+    }
 }

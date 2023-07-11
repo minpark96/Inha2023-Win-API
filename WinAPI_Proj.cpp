@@ -262,8 +262,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     PAINTSTRUCT ps;
     HDC hdc;
 
-    static list<CObject*> objs;
-    static list<CObject*>::iterator it1;
     static POINT ptMousePos;
     //static RECT rectView;
     static bool bFlag = false;
@@ -289,14 +287,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         //    InvalidateRect(hWnd, NULL, TRUE);
         //}
         break;
-    case WM_LBUTTONDOWN:
-    {
-        ptMousePos.x = LOWORD(lParam);
-        ptMousePos.y = HIWORD(lParam);
-        
-        InvalidateRgn(hWnd, NULL, TRUE);
-    }
-    break;
     case WM_PAINT:
     {
         hdc = BeginPaint(hWnd, &ps);

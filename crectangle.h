@@ -4,7 +4,7 @@
 
 #define DegreeToRadian(degree) ((degree) * PI / 180)
 #define PI 3.141592653589793
-
+class CCircle;
 class CRectangle
 {
 private:
@@ -21,10 +21,12 @@ public:
 
 	void Draw(HDC hdc);
 	void Update(RECT* rectview);
-	bool Collision(const CCircle& cir) const;
+	bool Collision(const CCircle& cir);
 
 	double GetWidth() const;
 	double GetHeight() const;
 	COLORREF GetColor() const;
+
+	void SetColor(int hp);
 };
 
