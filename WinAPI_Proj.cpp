@@ -3,7 +3,7 @@
 
 #include "framework.h"
 #include "WinAPI_Proj.h"
-
+#include <CommCtrl.h>
 
 // >> :
 #pragma comment(lib, "msimg32.lib")
@@ -44,7 +44,10 @@ void DrawBitmapDoubleBuffering(HWND hWnd, HDC hdc);
 
 VOID CALLBACK AniProc(HWND hWnd, UINT uMsg, UINT idEvent, DWORD dwTime);
 
+HWND hModalessDlg;
 BOOL CALLBACK Dialog_Test1_Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lParam);
+void MakeColumn(HWND hDlg);
+void InsertData(HWND hDlg);
 
 // << :
 
@@ -268,6 +271,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     enum type {NONE, CIRCLE, RECTANGLE, STAR};
     static int selectedMenu = NONE;
 
+    static HMENU hMenu, hSubMenu;
+
     switch (message)
     {
     case WM_SIZE :
@@ -315,7 +320,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case ID_DRAW_RECT:
                 selectedMenu = RECTANGLE;
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, Dialog_Test1_Proc);
+                /*DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, Dialog_Test1_Proc);*/
+
+                hModalessDlg = CreateDialog(hInst, MAKEINTRESOURCE(IDD_DIALOG1),
+                    hWnd, Dialog_Test1_Proc);
+                ShowWindow(hModalessDlg, SW_SHOW);
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
@@ -595,6 +604,12 @@ BOOL CALLBACK Dialog_Test1_Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lPar
     TCHAR sex[][30] = { _T("여성"), _T("남성") };
     TCHAR output[200];
 
+    static HWND hCombo;
+    static int selection;
+    TCHAR name[20];
+    static HWND hList;
+    static int selectionList;
+
     switch (iMsg)
     {
     case WM_INITDIALOG:
@@ -603,11 +618,44 @@ BOOL CALLBACK Dialog_Test1_Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lPar
         EnableWindow(hBtn, FALSE);
 
         CheckRadioButton(hDlg, IDC_RADIO_FEMALE, IDC_RADIO_MALE, IDC_RADIO_FEMALE);
+
+        hCombo = GetDlgItem(hDlg, IDC_COMBO_LIST);
+        hList = GetDlgItem(hDlg, IDC_LIST_NAME);
+        MakeColumn(hDlg); // << :
     }
         return 1;
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
+        case IDC_BUTTON_INSERT_MEMBER:
+            InsertData(hDlg);
+            return 0;
+        case IDC_BUTTON_INSERT:
+            GetDlgItemText(hDlg, IDC_EDIT_NAME, name, 20);
+            if (_tcscmp(name, _T("")))
+            {
+                SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)name);
+                SendMessage(hList, LB_ADDSTRING, 0, (LPARAM)name);
+            }
+            SetDlgItemText(hDlg, IDC_EDIT_NAME, _T(""));
+            return 0;
+            break;
+        case IDC_BUTTON_DELETE:
+            SendMessage(hCombo, CB_DELETESTRING, selection, 0);
+            break;
+        case IDC_LIST_NAME:
+            if (HIWORD(wParam) == LBN_SELCHANGE)
+                selectionList = (int)SendMessage(hList, LB_GETCURSEL, 0, 0);
+            break;
+        case IDC_BUTTON_DELETE2:
+            SendMessage(hList, LB_DELETESTRING, selectionList, 0);
+            break;
+        case IDC_COMBO_LIST:
+            if (HIWORD(wParam) == CBN_SELCHANGE)
+            {
+                selection = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
+            }
+            break;
         case IDC_CHECK_READING:
             Check[0] = 1 - Check[0];
             break;
@@ -680,10 +728,12 @@ BOOL CALLBACK Dialog_Test1_Proc(HWND hDlg, UINT iMsg, WPARAM wParam, LPARAM lPar
         }
         break;
         case IDOK:
-            EndDialog(hDlg, 0);
+            //EndDialog(hDlg, 0);
+            DestroyWindow(hDlg);
             break;
         case ID_EXIT:
-            EndDialog(hDlg, 0);
+            //EndDialog(hDlg, 0);
+            DestroyWindow(hDlg);
             break;
         }
         break;
@@ -798,8 +848,6 @@ void Gdi_Draw(HDC hdc)
         delete pImg;
     }
 
-
-
     // >> : alpha rect
     brush.SetColor(Color(128, 255, 0, 0));
     graphics.FillRectangle(&brush, 100, 100, 200, 300);
@@ -808,4 +856,41 @@ void Gdi_Draw(HDC hdc)
 void Gdi_End()
 {
     GdiplusShutdown(g_GdiToken);
+}
+
+void MakeColumn(HWND hDlg)
+{
+    LPCTSTR name[2] = { _T("이름"), _T("전화번호") };
+    LVCOLUMN lvCol = { 0, };
+    HWND hList;
+    hList = GetDlgItem(hDlg, IDC_LIST_MEMBER);
+    lvCol.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+    lvCol.fmt = LVCFMT_LEFT;
+
+    for (int i = 0; i < 2; i++)
+    {
+        lvCol.cx = 90;
+        lvCol.iSubItem = i;
+        lvCol.pszText = (LPWSTR)name[i];
+        SendMessage(hList, LVM_INSERTCOLUMN, (WPARAM)i, (LPARAM)&lvCol);
+    }
+}
+
+void InsertData(HWND hDlg)
+{
+    LVITEM item;
+    HWND hList;
+    LPCTSTR name[20] = { _T("김철수"), _T("김영희") };
+    LPCTSTR phone[20] = { _T("010-2573-8574"), _T("011-9872-5867") };
+    hList = GetDlgItem(hDlg, IDC_LIST_MEMBER);
+
+    for (int i = 0; i < 2; i++)
+    {
+        item.mask = LVIF_TEXT;
+        item.iItem = i;
+        item.iSubItem = 0;
+        item.pszText = (LPWSTR)name[i];
+        ListView_InsertItem(hList, &item);
+        ListView_SetItemText(hList, i, 1, (LPWSTR)phone[i]);
+    }
 }

@@ -30,6 +30,14 @@
 #define IDC_RADIO_MALE                  1039
 #define IDC_EDIT_OUTPUT                 1040
 #define IDC_BUTTON_OUTPUT               1041
+#define IDC_COMBO_LIST                  1043
+#define IDC_BUTTON_INSERT               1044
+#define IDC_BUTTON_DELETE               1045
+#define IDC_EDIT_NAME                   1046
+#define IDC_LIST_NAME                   1047
+#define IDC_BUTTON_DELETE2              1048
+#define IDC_LIST_MEMBER                 1050
+#define IDC_BUTTON_INSERT_MEMBER        1051
 #define ID_DRAW_CIRCLE                  32778
 #define ID_DRAW_RECT                    32781
 #define ID_DRAW_STAR                    32782
@@ -47,7 +55,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32794
-#define _APS_NEXT_CONTROL_VALUE         1042
+#define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
