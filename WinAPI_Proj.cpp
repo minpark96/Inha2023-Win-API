@@ -61,6 +61,13 @@ void Gdi_End();
 
 // << :
 
+// >> : split windows
+HWND ChildWnd[3];
+LRESULT CALLBACK ChildWndProc1(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK ChildWndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK ChildWndProc3(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+// << :
+
 #define MAX_LOADSTRING 100
 
 // 전역 변수:
@@ -157,8 +164,25 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_WINAPIPROJ);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    RegisterClassExW(&wcex);
 
-    return RegisterClassExW(&wcex);
+    // : split window 1
+    wcex.lpfnWndProc = ChildWndProc1;
+    wcex.lpszMenuName = NULL;
+    wcex.lpszClassName = _T("Child Window Class 1");
+    RegisterClassExW(&wcex);
+    // : split window 2
+    wcex.lpfnWndProc = ChildWndProc2;
+    wcex.lpszMenuName = NULL;
+    wcex.lpszClassName = _T("Child Window Class 2");
+    RegisterClassExW(&wcex);
+    // : split window 3
+    wcex.lpfnWndProc = ChildWndProc3;
+    wcex.lpszMenuName = NULL;
+    wcex.lpszClassName = _T("Child Window Class 3");
+    RegisterClassExW(&wcex);
+
+    return NULL;
 }
 
 //
@@ -282,28 +306,42 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         srand(time(NULL));
         GetClientRect(hWnd, &rectView);
         //SetTimer(hWnd, timer_ID_1, 10, NULL);
-        SetTimer(hWnd, timer_ID_2, 10, AniProc);
+        //SetTimer(hWnd, timer_ID_2, 10, AniProc);
         CreateBitmap();
-        break;
-    case WM_TIMER:
-        //if (wParam == timer_ID_2)
-        //{
-        //    UpdateFrame(hWnd);
-        //    InvalidateRect(hWnd, NULL, TRUE);
-        //}
-        break;
-    case WM_PAINT:
-    {
-        hdc = BeginPaint(hWnd, &ps);
-        // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
 
-        DrawBitmapDoubleBuffering(hWnd, hdc);
-        //DrawBitmap(hWnd, hdc);
-        DrawRectText(hdc);
-
-            EndPaint(hWnd, &ps);
+        // >> : split window
+        {
+            ChildWnd[0] = CreateWindowEx(WS_EX_CLIENTEDGE, _T("Child Window Class 1"),
+                NULL, WS_CHILD | WS_VISIBLE, 0, 0, rectView.right / 2 - 1, rectView.bottom / 2 - 1,
+                hWnd, NULL, hInst, NULL);
+            ChildWnd[1] = CreateWindowEx(WS_EX_CLIENTEDGE, _T("Child Window Class 2"),
+                NULL, WS_CHILD | WS_VISIBLE, 0, rectView.bottom / 2 + 1, rectView.right, rectView.bottom / 2 - 1,
+                hWnd, NULL, hInst, NULL);
+            ChildWnd[2] = CreateWindowEx(WS_EX_CLIENTEDGE, _T("Child Window Class 3"),
+                NULL, WS_CHILD | WS_VISIBLE, rectView.right / 2 + 1, 0, rectView.right, rectView.bottom / 2 - 1,
+                hWnd, NULL, hInst, NULL);
         }
+
         break;
+    /*case WM_TIMER:
+        if (wParam == timer_ID_2)
+        {
+            UpdateFrame(hWnd);
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
+        break;*/
+    //case WM_PAINT:
+    //{
+    //    hdc = BeginPaint(hWnd, &ps);
+    //    // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
+    //    DrawBitmapDoubleBuffering(hWnd, hdc);
+    //    //DrawBitmap(hWnd, hdc);
+    //    DrawRectText(hdc);
+
+    //        EndPaint(hWnd, &ps);
+    //    }
+    //    break;
 
 
     case WM_COMMAND:
@@ -856,6 +894,123 @@ void Gdi_Draw(HDC hdc)
 void Gdi_End()
 {
     GdiplusShutdown(g_GdiToken);
+}
+
+#define IDC_CHILD1_BTN 2000
+
+LRESULT CALLBACK ChildWndProc1(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    HWND hBtn;
+    static bool bToggle = false;
+
+    switch (message)
+    {
+    case WM_CREATE:
+        SetTimer(hWnd, timer_ID_2, 0, AniProc);
+
+        hBtn = CreateWindow(_T("button"), _T("OK"),
+            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+            200, 10, 100, 30, hWnd, (HMENU)IDC_CHILD1_BTN,
+            hInst, NULL);
+        break;
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDC_CHILD1_BTN:
+            bToggle = !bToggle;
+            break;
+        }
+        break;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
+        DrawBitmapDoubleBuffering(hWnd, hdc);
+        if (bToggle)
+            TextOut(hdc, 200, 50, _T("Button Clicked"), 14);
+        //DrawBitmap(hWnd, hdc);
+        DrawRectText(hdc);
+
+        EndPaint(hWnd, &ps);
+    }
+    break;
+    case WM_DESTROY:
+        break;
+    }
+    return DefWindowProc(hWnd, message, wParam, lParam);
+
+}
+
+LRESULT CALLBACK ChildWndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static POINT ptMouse;
+    switch (message)
+    {
+    case WM_CREATE:
+        //SetTimer(hWnd, timer_ID_2, 10, AniProc);
+        break;
+    case WM_COMMAND:
+        break;
+    case WM_MOUSEMOVE:
+        GetCursorPos(&ptMouse);
+        InvalidateRect(hWnd, NULL, false);
+        break;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        TCHAR str[128];
+        wsprintf(str, TEXT("WORLD POSITION : (%04d, %04d)"), ptMouse.x, ptMouse.y);
+        TextOut(hdc, 10, 30, str, lstrlen(str));
+
+        ScreenToClient(hWnd, &ptMouse);
+        wsprintf(str, TEXT("LOCAL POSITION : (%04d, %04d)"), ptMouse.x, ptMouse.y);
+        TextOut(hdc, 10, 50, str, lstrlen(str));
+
+        EndPaint(hWnd, &ps);
+    }
+    break;
+    case WM_DESTROY:
+        break;
+    }
+    return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+LRESULT CALLBACK ChildWndProc3(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    static POINT ptMouse;
+    switch (message)
+    {
+    case WM_CREATE:
+        //SetTimer(hWnd, timer_ID_2, 10, AniProc);
+        break;
+    case WM_COMMAND:
+        break;
+    case WM_MOUSEMOVE:
+        GetCursorPos(&ptMouse);
+        InvalidateRect(hWnd, NULL, false);
+        break;
+    case WM_PAINT:
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        TCHAR str[128];
+        wsprintf(str, TEXT("WORLD POSITION : (%04d, %04d)"), ptMouse.x, ptMouse.y);
+        TextOut(hdc, 10, 30, str, lstrlen(str));
+
+        //ScreenToClient(hWnd, &ptMouse);
+        wsprintf(str, TEXT("LOCAL POSITION : (%04d, %04d)"), ptMouse.x, ptMouse.y);
+        TextOut(hdc, 10, 50, str, lstrlen(str));
+
+        EndPaint(hWnd, &ps);
+    }
+    break;
+    case WM_DESTROY:
+        break;
+    }
+    return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 void MakeColumn(HWND hDlg)
